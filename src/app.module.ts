@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { RealmsModule } from './modules/realms/realms.module';
 import Joi from 'joi';
 import { SharedModule } from './modules/shared/shared.module';
+import { ImagesModule } from './modules/images/images.module';
 
 @Module({
   imports: [
@@ -21,6 +22,14 @@ import { SharedModule } from './modules/shared/shared.module';
         RMU_KAFKA_BROKERS: Joi.string().required(),
         RMU_KAFKA_CLIENT_ID: Joi.string().required(),
         RMU_KAFKA_DEFAULT_PARTITIONS: Joi.number().integer().min(1).default(1),
+        RMU_MEDIA_S3_REGION: Joi.string().required(),
+        RMU_MEDIA_S3_BUCKET: Joi.string().required(),
+        RMU_MEDIA_S3_ENDPOINT: Joi.string().uri().optional(),
+        RMU_MEDIA_S3_PUBLIC_BASE_URL: Joi.string().uri().optional(),
+        RMU_MEDIA_S3_ACCESS_KEY_ID: Joi.string().optional(),
+        RMU_MEDIA_S3_SECRET_ACCESS_KEY: Joi.string().optional(),
+        RMU_MEDIA_S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
+        RMU_MEDIA_IMAGE_MAX_WIDTH: Joi.number().integer().min(1).default(2048),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -33,6 +42,7 @@ import { SharedModule } from './modules/shared/shared.module';
     AuthModule,
     SharedModule,
     RealmsModule,
+    ImagesModule,
   ],
 })
 export class AppModule {}

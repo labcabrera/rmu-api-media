@@ -25,6 +25,7 @@
     "test:all": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1048.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -49,6 +50,7 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.34.5",
     "swagger-ui-express": "^5.0.1",
     "test": "^3.3.0"
   },
