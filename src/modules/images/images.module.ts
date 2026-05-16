@@ -4,7 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { SharedModule } from '../shared/shared.module';
 import { DeleteImageHandler } from './application/cqrs/handlers/delete-image.handler';
-import { ImportImagesHandler } from './application/cqrs/handlers/import-images-from-s3-folder.handler';
+import { ImportImagesHandler } from './application/cqrs/handlers/import-images.handler';
 import { ListImagesHandler } from './application/cqrs/handlers/list-images.handler';
 import { UpdateImageHandler } from './application/cqrs/handlers/update-image.handler';
 import { UploadImageHandler } from './application/cqrs/handlers/upload-image.handler';

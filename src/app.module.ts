@@ -23,6 +23,7 @@ import { ImagesModule } from './modules/images/images.module';
         RMU_KAFKA_DEFAULT_PARTITIONS: Joi.number().integer().min(1).default(1),
         RMU_MEDIA_S3_REGION: Joi.string().required(),
         RMU_MEDIA_S3_BUCKET: Joi.string().required(),
+        RMU_MEDIA_S3_BASE_FOLDER: Joi.string().allow('').default(''),
         RMU_MEDIA_S3_ENDPOINT: Joi.string().uri().optional(),
         RMU_MEDIA_S3_PUBLIC_BASE_URL: Joi.string().uri().optional(),
         RMU_MEDIA_S3_ACCESS_KEY_ID: Joi.string().optional(),

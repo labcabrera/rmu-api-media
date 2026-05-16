@@ -9,10 +9,12 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   private readonly logger = new Logger(S3ImageStorageAdapter.name);
   private readonly client: S3Client;
   private readonly bucket: string;
+  private readonly baseFolder: string;
   private readonly publicBaseUrl: string | undefined;
   private readonly maxWidth: number;
 
   constructor(configService: ConfigService) {
+    const endpoint = configService.get<string>('RMU_MEDIA_S3_ENDPOINT');
     const forcePathStyle =
       configService.get<string | boolean>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === true ||
       configService.get<string>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === 'true';
@@ -20,11 +22,13 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     const secretAccessKey = configService.get<string>('RMU_MEDIA_S3_SECRET_ACCESS_KEY');
 
     this.bucket = configService.getOrThrow<string>('RMU_MEDIA_S3_BUCKET');
+    this.baseFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_BASE_FOLDER') ?? '');
     this.publicBaseUrl = configService.get<string>('RMU_MEDIA_S3_PUBLIC_BASE_URL');
     this.maxWidth = configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048;
 
     this.client = new S3Client({
       region: configService.getOrThrow<string>('RMU_MEDIA_S3_REGION'),
+      endpoint,
       forcePathStyle,
       credentials:
         accessKeyId && secretAccessKey
@@ -39,11 +43,12 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   async store(input: StoreImageInput): Promise<StoredImage> {
     const processed = await this.scale(input.content, input.contentType);
     const storageKey = this.buildStorageKey(input, processed.contentType);
+    const s3Key = this.toS3Key(storageKey);
 
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
-        Key: storageKey,
+        Key: s3Key,
         Body: processed.content,
         ContentType: processed.contentType,
       }),
@@ -51,7 +56,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
     return {
       storageKey,
-      url: this.buildUrl(storageKey),
+      url: this.buildUrl(s3Key),
       contentType: processed.contentType,
       sizeBytes: processed.content.length,
       width: processed.width,
@@ -67,18 +72,19 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
       const page = await this.client.send(
         new ListObjectsV2Command({
           Bucket: this.bucket,
-          Prefix: this.normalizePrefix(prefix),
+          Prefix: this.toS3Prefix(prefix),
           ContinuationToken: continuationToken,
         }),
       );
 
       for (const item of page.Contents ?? []) {
         if (!item.Key || item.Key.endsWith('/')) continue;
+        const storageKey = this.toStorageKey(item.Key);
         const head = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: item.Key }));
         objects.push({
-          storageKey: item.Key,
+          storageKey,
           url: this.buildUrl(item.Key),
-          contentType: head.ContentType ?? this.inferContentType(item.Key),
+          contentType: head.ContentType ?? this.inferContentType(storageKey),
           sizeBytes: item.Size ?? head.ContentLength ?? 0,
           lastModified: item.LastModified,
         });
@@ -92,10 +98,11 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
   async delete(storageKey: string): Promise<void> {
     if (!storageKey) return;
+    const s3Key = this.toS3Key(storageKey);
     try {
-      await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: storageKey }));
+      await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: s3Key }));
     } catch (error) {
-      this.logger.warn(`Could not delete image object ${storageKey}: ${(error as Error).message}`);
+      this.logger.warn(`Could not delete image object ${s3Key}: ${(error as Error).message}`);
     }
   }
 
@@ -125,7 +132,25 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   }
 
   private normalizePrefix(prefix: string) {
-    return prefix.replace(/^\/+/, '');
+    return prefix.replace(/^\/+/, '').replace(/\/+$/, '');
+  }
+
+  private toS3Key(storageKey: string) {
+    const normalizedStorageKey = this.normalizePrefix(storageKey);
+    if (!this.baseFolder) return normalizedStorageKey;
+    return normalizedStorageKey ? `${this.baseFolder}/${normalizedStorageKey}` : this.baseFolder;
+  }
+
+  private toS3Prefix(prefix: string) {
+    const s3Key = this.toS3Key(prefix);
+    return s3Key ? `${s3Key}/` : '';
+  }
+
+  private toStorageKey(s3Key: string) {
+    const normalizedS3Key = this.normalizePrefix(s3Key);
+    if (!this.baseFolder) return normalizedS3Key;
+    if (normalizedS3Key === this.baseFolder) return '';
+    return normalizedS3Key.startsWith(`${this.baseFolder}/`) ? normalizedS3Key.slice(this.baseFolder.length + 1) : normalizedS3Key;
   }
 
   private inferContentType(storageKey: string) {

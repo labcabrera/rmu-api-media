@@ -44,7 +44,7 @@ import { UpdateImageDto } from './dtos/update-image.dto';
 import type { UploadedImageFile } from './dtos/uploaded-image-file';
 import { UploadImageDto } from './dtos/upload-image.dto';
 import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
-import { ImportImagesResult } from '../../application/cqrs/handlers/import-images-from-s3-folder.handler';
+import { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/images')

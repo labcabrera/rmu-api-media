@@ -27,6 +27,8 @@ export class ImportImagesHandler implements ICommandHandler<ImportImagesCommand,
     const imported: Image[] = [];
     const skipped: string[] = [];
 
+    console.debug(`Found ${objects.length} objects in folder ${command.folder}`);
+
     for (const object of objects) {
       if (!this.isImage(object)) {
         skipped.push(object.storageKey);
@@ -39,7 +41,7 @@ export class ImportImagesHandler implements ICommandHandler<ImportImagesCommand,
         continue;
       }
 
-      const category = object.url.split('/').slice(-2, -1)[0] as ImageCategory;
+      const category = object.storageKey.split('/').slice(-2, -1)[0] as ImageCategory;
 
       const image = Image.create({
         category: category,

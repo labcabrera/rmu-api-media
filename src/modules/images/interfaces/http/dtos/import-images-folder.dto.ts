@@ -1,9 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ImportImagesCommand } from 'src/modules/images/application/cqrs/commands/import-images-from-s3-folder.command';
-import type { ImportImagesResult } from 'src/modules/images/application/cqrs/handlers/import-images-from-s3-folder.handler';
-import { IMAGE_CATEGORIES } from 'src/modules/images/domain/entities/image-category';
-import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
+import type { ImportImagesResult } from 'src/modules/images/application/cqrs/handlers/import-images.handler';
 import { ImageDto } from './image.dto';
 import { parseMetadata } from './upload-image.dto';
 
@@ -12,11 +10,6 @@ export class ImportImagesFromS3FolderDto {
   @IsString()
   @IsNotEmpty()
   folder: string;
-
-  @ApiProperty({ description: 'Category to assign to imported images', enum: IMAGE_CATEGORIES, example: 'avatar' })
-  @IsString()
-  @IsIn(IMAGE_CATEGORIES)
-  category: ImageCategory;
 
   @ApiPropertyOptional({ description: 'JSON object with extra metadata', example: '{"source":"legacy"}' })
   @IsString()
