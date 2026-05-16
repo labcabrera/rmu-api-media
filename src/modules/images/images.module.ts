@@ -5,7 +5,7 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { SharedModule } from '../shared/shared.module';
 import { DeleteImageHandler } from './application/cqrs/handlers/delete-image.handler';
 import { ImportImagesHandler } from './application/cqrs/handlers/import-images-from-s3-folder.handler';
-import { ListImagesByCategoryHandler } from './application/cqrs/handlers/list-images-by-category.handler';
+import { ListImagesHandler } from './application/cqrs/handlers/list-images.handler';
 import { UpdateImageHandler } from './application/cqrs/handlers/update-image.handler';
 import { UploadImageHandler } from './application/cqrs/handlers/upload-image.handler';
 import { MongoImageRepository } from './infrastructure/db/mongo.image.repository';
@@ -17,7 +17,7 @@ import { ImageController } from './interfaces/http/image.controller';
   imports: [CqrsModule, MongooseModule.forFeature([{ name: ImageModel.name, schema: ImageSchema }]), AuthModule, SharedModule],
   controllers: [ImageController],
   providers: [
-    ListImagesByCategoryHandler,
+    ListImagesHandler,
     ImportImagesHandler,
     UploadImageHandler,
     UpdateImageHandler,

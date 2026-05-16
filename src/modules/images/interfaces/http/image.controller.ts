@@ -32,9 +32,8 @@ import { JwtAuthGuard } from 'src/modules/auth/jwt.auth.guard';
 import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command';
 import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command';
 import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command';
-import { ListImagesByCategoryQuery } from '../../application/cqrs/queries/list-images-by-category.query';
+import { ListImagesQuery } from '../../application/cqrs/queries/list-images.query';
 import { Image } from '../../domain/aggregates/image';
-import { IMAGE_CATEGORIES } from '../../domain/entities/image-category';
 import type { ImageCategory } from '../../domain/entities/image-category';
 import { Page } from 'src/modules/shared/domain/entities/page';
 import { ErrorDto } from 'src/modules/shared/interfaces/http/dto/error-dto';
@@ -56,14 +55,15 @@ export class ImageController {
     private queryBus: QueryBus,
   ) {}
 
-  @Get('category/:category')
+  @Get('')
   @ApiOperation({ operationId: 'findImagesByCategory', summary: 'Find images by category' })
   @ApiOkResponse({ type: ImagePageDto, description: 'Success' })
   @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  async findByCategory(@Param('category') category: ImageCategory, @Query() dto: PagedQueryDto) {
-    if (!IMAGE_CATEGORIES.includes(category)) throw new BadRequestException('Invalid image category');
-    const query = new ListImagesByCategoryQuery(category, dto.page, dto.size);
-    const page = await this.queryBus.execute<ListImagesByCategoryQuery, Page<Image>>(query);
+  async findByCategory(@Param('category') category: ImageCategory, @Query() dto: PagedQueryDto, @Request() req) {
+    const userId = req.user!.id as string;
+    const roles = req.user!.roles as string[];
+    const query = new ListImagesQuery(dto.q || '', dto.page, dto.size, userId, roles);
+    const page = await this.queryBus.execute<ListImagesQuery, Page<Image>>(query);
     const mapped = page.content.map(image => ImageDto.fromEntity(image));
     return new Page<ImageDto>(mapped, page.pagination.page, page.pagination.size, page.pagination.totalElements);
   }
