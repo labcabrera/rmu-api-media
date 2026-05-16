@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
-import { RealmsModule } from './modules/realms/realms.module';
 import Joi from 'joi';
 import { SharedModule } from './modules/shared/shared.module';
 import { ImagesModule } from './modules/images/images.module';
@@ -14,7 +13,7 @@ import { ImagesModule } from './modules/images/images.module';
       envFilePath: '.env',
       validationSchema: Joi.object({
         PORT: Joi.number().positive().default(3011),
-        RMU_MONGO_CORE_URI: Joi.string().required(),
+        RMU_MONGO_MEDIA_URI: Joi.string().required(),
         RMU_IAM_JWK_URI: Joi.string().uri().required(),
         RMU_IAM_TOKEN_URI: Joi.string().uri().required(),
         RMU_IAM_CLIENT_ID: Joi.string().required(),
@@ -35,13 +34,12 @@ import { ImagesModule } from './modules/images/images.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('RMU_MONGO_CORE_URI'),
+        uri: configService.get<string>('RMU_MONGO_MEDIA_URI'),
       }),
       inject: [ConfigService],
     }),
     AuthModule,
     SharedModule,
-    RealmsModule,
     ImagesModule,
   ],
 })

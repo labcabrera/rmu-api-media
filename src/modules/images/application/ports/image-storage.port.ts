@@ -17,7 +17,16 @@ export interface StoredImage {
   height?: number;
 }
 
+export interface StoredImageObject {
+  storageKey: string;
+  url: string;
+  contentType: string;
+  sizeBytes: number;
+  lastModified?: Date;
+}
+
 export interface ImageStoragePort {
   store(input: StoreImageInput): Promise<StoredImage>;
+  list(prefix: string): Promise<StoredImageObject[]>;
   delete(storageKey: string): Promise<void>;
 }

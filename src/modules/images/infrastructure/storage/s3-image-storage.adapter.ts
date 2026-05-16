@@ -1,8 +1,8 @@
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
-import type { ImageStoragePort, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port';
+import type { ImageStoragePort, StoredImageObject, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port';
 
 @Injectable()
 export class S3ImageStorageAdapter implements ImageStoragePort {
@@ -14,7 +14,9 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
   constructor(configService: ConfigService) {
     const endpoint = configService.get<string>('RMU_MEDIA_S3_ENDPOINT');
-    const forcePathStyle = configService.get<string | boolean>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === true || configService.get<string>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === 'true';
+    const forcePathStyle =
+      configService.get<string | boolean>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === true ||
+      configService.get<string>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === 'true';
     const accessKeyId = configService.get<string>('RMU_MEDIA_S3_ACCESS_KEY_ID');
     const secretAccessKey = configService.get<string>('RMU_MEDIA_S3_SECRET_ACCESS_KEY');
 
@@ -58,6 +60,37 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     };
   }
 
+  async list(prefix: string): Promise<StoredImageObject[]> {
+    const objects: StoredImageObject[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const page = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: this.normalizePrefix(prefix),
+          ContinuationToken: continuationToken,
+        }),
+      );
+
+      for (const item of page.Contents ?? []) {
+        if (!item.Key || item.Key.endsWith('/')) continue;
+        const head = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: item.Key }));
+        objects.push({
+          storageKey: item.Key,
+          url: this.buildUrl(item.Key),
+          contentType: head.ContentType ?? this.inferContentType(item.Key),
+          sizeBytes: item.Size ?? head.ContentLength ?? 0,
+          lastModified: item.LastModified,
+        });
+      }
+
+      continuationToken = page.NextContinuationToken;
+    } while (continuationToken);
+
+    return objects;
+  }
+
   async delete(storageKey: string): Promise<void> {
     if (!storageKey) return;
     try {
@@ -90,6 +123,18 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   private buildStorageKey(input: StoreImageInput, contentType: string) {
     const extension = contentType === 'image/png' ? 'png' : 'jpg';
     return `${input.category}/${input.imageId}.${extension}`;
+  }
+
+  private normalizePrefix(prefix: string) {
+    return prefix.replace(/^\/+/, '');
+  }
+
+  private inferContentType(storageKey: string) {
+    const lowered = storageKey.toLowerCase();
+    if (lowered.endsWith('.png')) return 'image/png';
+    if (lowered.endsWith('.webp')) return 'image/webp';
+    if (lowered.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
   }
 
   private buildUrl(storageKey: string) {

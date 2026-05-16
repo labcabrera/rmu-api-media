@@ -12,7 +12,7 @@ export class ImageModel {
   @Prop({ required: true, index: true })
   category: ImageCategory;
 
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true, index: true })
   storageKey: string;
 
   @Prop({ required: true })

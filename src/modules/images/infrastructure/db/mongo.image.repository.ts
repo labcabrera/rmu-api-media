@@ -29,6 +29,11 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocume
     );
   }
 
+  async findByStorageKey(storageKey: string): Promise<Image | null> {
+    const doc = await this.model.findOne({ storageKey });
+    return doc ? this.mapToEntity(doc) : null;
+  }
+
   protected mapToEntity(doc: ImageDocument): Image {
     return Image.fromProps({
       id: doc.id as string,
