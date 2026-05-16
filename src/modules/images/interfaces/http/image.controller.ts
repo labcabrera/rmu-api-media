@@ -30,10 +30,8 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/modules/auth/jwt.auth.guard';
 import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command';
-import { ImportImagesFromS3FolderCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
 import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command';
 import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command';
-import type { ImportImagesFromS3FolderResult } from '../../application/cqrs/handlers/import-images-from-s3-folder.handler';
 import { ListImagesByCategoryQuery } from '../../application/cqrs/queries/list-images-by-category.query';
 import { Image } from '../../domain/aggregates/image';
 import { IMAGE_CATEGORIES } from '../../domain/entities/image-category';
@@ -42,10 +40,12 @@ import { Page } from 'src/modules/shared/domain/entities/page';
 import { ErrorDto } from 'src/modules/shared/interfaces/http/dto/error-dto';
 import { PagedQueryDto } from 'src/modules/shared/interfaces/http/dto/paged-rsql-query';
 import { ImageDto, ImagePageDto } from './dtos/image.dto';
-import { ImportImagesFromS3FolderDto, ImportImagesFromS3FolderResultDto } from './dtos/import-images-from-s3-folder.dto';
+import { ImportImagesFromS3FolderDto, ImportImagesResultDto as ImportImagesResultDto } from './dtos/import-images-folder.dto';
 import { UpdateImageDto } from './dtos/update-image.dto';
 import type { UploadedImageFile } from './dtos/uploaded-image-file';
 import { UploadImageDto } from './dtos/upload-image.dto';
+import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
+import { ImportImagesResult } from '../../application/cqrs/handlers/import-images-from-s3-folder.handler';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/images')
@@ -87,14 +87,14 @@ export class ImageController {
   @Post('import/s3-folder')
   @ApiBody({ type: ImportImagesFromS3FolderDto })
   @ApiOperation({ operationId: 'importImagesFromS3Folder', summary: 'Import images from an S3 folder' })
-  @ApiOkResponse({ type: ImportImagesFromS3FolderResultDto, description: 'Success' })
+  @ApiOkResponse({ type: ImportImagesResultDto, description: 'Success' })
   @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
   @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
   async importFromS3Folder(@Body() dto: ImportImagesFromS3FolderDto, @Request() req) {
     const user = req.user!;
     const command = ImportImagesFromS3FolderDto.toCommand(dto, user.id as string, user.roles as string[]);
-    const result = await this.commandBus.execute<ImportImagesFromS3FolderCommand, ImportImagesFromS3FolderResult>(command);
-    return ImportImagesFromS3FolderResultDto.fromResult(result);
+    const result = await this.commandBus.execute<ImportImagesCommand, ImportImagesResult>(command);
+    return ImportImagesResultDto.fromResult(result);
   }
 
   @Patch(':id')

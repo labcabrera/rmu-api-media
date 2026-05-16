@@ -13,7 +13,6 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   private readonly maxWidth: number;
 
   constructor(configService: ConfigService) {
-    const endpoint = configService.get<string>('RMU_MEDIA_S3_ENDPOINT');
     const forcePathStyle =
       configService.get<string | boolean>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === true ||
       configService.get<string>('RMU_MEDIA_S3_FORCE_PATH_STYLE') === 'true';
@@ -23,9 +22,9 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     this.bucket = configService.getOrThrow<string>('RMU_MEDIA_S3_BUCKET');
     this.publicBaseUrl = configService.get<string>('RMU_MEDIA_S3_PUBLIC_BASE_URL');
     this.maxWidth = configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048;
+
     this.client = new S3Client({
       region: configService.getOrThrow<string>('RMU_MEDIA_S3_REGION'),
-      endpoint,
       forcePathStyle,
       credentials:
         accessKeyId && secretAccessKey

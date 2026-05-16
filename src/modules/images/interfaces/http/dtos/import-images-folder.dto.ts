@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ImportImagesFromS3FolderCommand } from 'src/modules/images/application/cqrs/commands/import-images-from-s3-folder.command';
-import type { ImportImagesFromS3FolderResult } from 'src/modules/images/application/cqrs/handlers/import-images-from-s3-folder.handler';
+import { ImportImagesCommand } from 'src/modules/images/application/cqrs/commands/import-images-from-s3-folder.command';
+import type { ImportImagesResult } from 'src/modules/images/application/cqrs/handlers/import-images-from-s3-folder.handler';
 import { IMAGE_CATEGORIES } from 'src/modules/images/domain/entities/image-category';
 import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
 import { ImageDto } from './image.dto';
@@ -24,11 +24,11 @@ export class ImportImagesFromS3FolderDto {
   metadata?: string;
 
   static toCommand(dto: ImportImagesFromS3FolderDto, userId: string, userRoles: string[]) {
-    return new ImportImagesFromS3FolderCommand(dto.folder, dto.category, parseMetadata(dto.metadata), userId, userRoles);
+    return new ImportImagesCommand(dto.folder, parseMetadata(dto.metadata), userId, userRoles);
   }
 }
 
-export class ImportImagesFromS3FolderResultDto {
+export class ImportImagesResultDto {
   @ApiProperty({ description: 'Imported images', type: [ImageDto] })
   imported: ImageDto[];
 
@@ -41,8 +41,8 @@ export class ImportImagesFromS3FolderResultDto {
   @ApiProperty({ description: 'Number of skipped objects' })
   skippedCount: number;
 
-  static fromResult(result: ImportImagesFromS3FolderResult) {
-    const dto = new ImportImagesFromS3FolderResultDto();
+  static fromResult(result: ImportImagesResult) {
+    const dto = new ImportImagesResultDto();
     dto.imported = result.imported.map(image => ImageDto.fromEntity(image));
     dto.skipped = result.skipped;
     dto.importedCount = result.imported.length;

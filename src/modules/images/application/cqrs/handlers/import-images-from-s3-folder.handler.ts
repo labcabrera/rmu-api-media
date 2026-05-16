@@ -1,25 +1,26 @@
 import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Image } from '../../../domain/aggregates/image';
-import { ImportImagesFromS3FolderCommand } from '../commands/import-images-from-s3-folder.command';
+import { ImportImagesCommand } from '../commands/import-images-from-s3-folder.command';
 import type { ImageRepository } from '../../ports/image-repository';
 import type { ImageStoragePort, StoredImageObject } from '../../ports/image-storage.port';
+import { ImageCategory } from 'src/modules/images/domain/entities/image-category';
 
-export interface ImportImagesFromS3FolderResult {
+export interface ImportImagesResult {
   imported: Image[];
   skipped: string[];
 }
 
-@CommandHandler(ImportImagesFromS3FolderCommand)
-export class ImportImagesFromS3FolderHandler implements ICommandHandler<ImportImagesFromS3FolderCommand, ImportImagesFromS3FolderResult> {
-  private readonly logger = new Logger(ImportImagesFromS3FolderHandler.name);
+@CommandHandler(ImportImagesCommand)
+export class ImportImagesHandler implements ICommandHandler<ImportImagesCommand, ImportImagesResult> {
+  private readonly logger = new Logger(ImportImagesHandler.name);
 
   constructor(
     @Inject('ImageRepository') private readonly imageRepository: ImageRepository,
     @Inject('ImageStoragePort') private readonly imageStorage: ImageStoragePort,
   ) {}
 
-  async execute(command: ImportImagesFromS3FolderCommand): Promise<ImportImagesFromS3FolderResult> {
+  async execute(command: ImportImagesCommand): Promise<ImportImagesResult> {
     this.logger.log(`Importing S3 images from folder ${command.folder} for user ${command.userId}`);
 
     const objects = await this.imageStorage.list(command.folder);
@@ -38,8 +39,10 @@ export class ImportImagesFromS3FolderHandler implements ICommandHandler<ImportIm
         continue;
       }
 
+      const category = object.url.split('/').slice(-2, -1)[0] as ImageCategory;
+
       const image = Image.create({
-        category: command.category,
+        category: category,
         storageKey: object.storageKey,
         url: object.url,
         contentType: object.contentType,
