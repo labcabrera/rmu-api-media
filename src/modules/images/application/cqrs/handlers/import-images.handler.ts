@@ -27,7 +27,7 @@ export class ImportImagesHandler implements ICommandHandler<ImportImagesCommand,
     const imported: Image[] = [];
     const skipped: string[] = [];
 
-    console.debug(`Found ${objects.length} objects in folder ${command.folder}`);
+    this.logger.log(`Found ${objects.length} objects in folder ${command.folder}`);
 
     for (const object of objects) {
       if (!this.isImage(object)) {

@@ -84,9 +84,9 @@ export class ImageController {
     return ImageDto.fromEntity(image);
   }
 
-  @Post('import/s3-folder')
+  @Post('import')
   @ApiBody({ type: ImportImagesFromS3FolderDto })
-  @ApiOperation({ operationId: 'importImagesFromS3Folder', summary: 'Import images from an S3 folder' })
+  @ApiOperation({ operationId: 'importImages', summary: 'Import images' })
   @ApiOkResponse({ type: ImportImagesResultDto, description: 'Success' })
   @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
   @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
