@@ -56,7 +56,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
     return {
       storageKey,
-      url: this.buildUrl(s3Key),
+      url: this.buildUrl(storageKey),
       contentType: processed.contentType,
       sizeBytes: processed.content.length,
       width: processed.width,
@@ -83,7 +83,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
         const head = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: item.Key }));
         objects.push({
           storageKey,
-          url: this.buildUrl(item.Key),
+          url: this.buildUrl(storageKey),
           contentType: head.ContentType ?? this.inferContentType(storageKey),
           sizeBytes: item.Size ?? head.ContentLength ?? 0,
           lastModified: item.LastModified,
