@@ -10,6 +10,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   private readonly client: S3Client;
   private readonly bucket: string;
   private readonly baseFolder: string;
+  private readonly imageFolder: string;
   private readonly publicBaseUrl: string | undefined;
   private readonly maxWidth: number;
 
@@ -23,6 +24,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
     this.bucket = configService.getOrThrow<string>('RMU_MEDIA_S3_BUCKET');
     this.baseFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_BASE_FOLDER') ?? '');
+    this.imageFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_IMAGE_FOLDER') ?? '');
     this.publicBaseUrl = configService.get<string>('RMU_MEDIA_S3_PUBLIC_BASE_URL');
     this.maxWidth = configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048;
 
@@ -128,7 +130,8 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
   private buildStorageKey(input: StoreImageInput, contentType: string) {
     const extension = contentType === 'image/png' ? 'png' : 'jpg';
-    return `${input.category}/${input.imageId}.${extension}`;
+    const suffix = `${input.category}/${input.imageId}.${extension}`;
+    return this.imageFolder ? `${this.imageFolder}/${suffix}` : suffix;
   }
 
   private normalizePrefix(prefix: string) {
