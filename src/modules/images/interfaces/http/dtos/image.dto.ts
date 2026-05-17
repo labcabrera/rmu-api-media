@@ -37,6 +37,9 @@ export class ImageDto {
   @ApiPropertyOptional({ description: 'Extra metadata' })
   metadata?: Record<string, string>;
 
+  @ApiProperty({ description: 'Whether the image has been verified by synchronization' })
+  verified: boolean;
+
   @ApiProperty({ description: 'Owner user id' })
   owner: string;
 
@@ -53,6 +56,7 @@ export class ImageDto {
     dto.originalFilename = entity.originalFilename;
     dto.altText = entity.altText;
     dto.metadata = entity.metadata;
+    dto.verified = entity.verified;
     dto.owner = entity.owner;
     return dto;
   }

@@ -39,6 +39,9 @@ export class ImageModel {
   @Prop({ type: Object, required: false })
   metadata?: Record<string, string>;
 
+  @Prop({ required: true, default: false, index: true })
+  verified: boolean;
+
   @Prop({ required: true, index: true })
   owner: string;
 

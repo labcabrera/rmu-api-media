@@ -20,6 +20,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
+  ApiAcceptedResponse,
   ApiConsumes,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -39,12 +40,18 @@ import { Page } from 'src/modules/shared/domain/entities/page';
 import { ErrorDto } from 'src/modules/shared/interfaces/http/dto/error-dto';
 import { PagedQueryDto } from 'src/modules/shared/interfaces/http/dto/paged-rsql-query';
 import { ImageDto, ImagePageDto } from './dtos/image.dto';
-import { ImportImagesFromS3FolderDto, ImportImagesResultDto as ImportImagesResultDto } from './dtos/import-images-folder.dto';
+import {
+  ImageImportTaskDto,
+  ImportImagesFromS3FolderDto,
+  ImportImagesResultDto as ImportImagesResultDto,
+} from './dtos/import-images-folder.dto';
 import { UpdateImageDto } from './dtos/update-image.dto';
 import type { UploadedImageFile } from './dtos/uploaded-image-file';
 import { UploadImageDto } from './dtos/upload-image.dto';
 import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
 import { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler';
+import { GetImageImportTaskQuery } from '../../application/cqrs/queries/get-image-import-task.query';
+import { ImageImportTask } from '../../domain/aggregates/image-import-task';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/images')
@@ -87,14 +94,27 @@ export class ImageController {
   @Post('import')
   @ApiBody({ type: ImportImagesFromS3FolderDto })
   @ApiOperation({ operationId: 'importImages', summary: 'Import images' })
-  @ApiOkResponse({ type: ImportImagesResultDto, description: 'Success' })
+  @ApiAcceptedResponse({ type: ImportImagesResultDto, description: 'Import task accepted' })
   @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
   @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
+  @HttpCode(202)
   async importFromS3Folder(@Body() dto: ImportImagesFromS3FolderDto, @Request() req) {
     const user = req.user!;
     const command = ImportImagesFromS3FolderDto.toCommand(dto, user.id as string, user.roles as string[]);
     const result = await this.commandBus.execute<ImportImagesCommand, ImportImagesResult>(command);
     return ImportImagesResultDto.fromResult(result);
+  }
+
+  @Get('import/:taskId')
+  @ApiOperation({ operationId: 'getImageImportTask', summary: 'Get image import task result' })
+  @ApiOkResponse({ type: ImageImportTaskDto, description: 'Success' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
+  @ApiNotFoundResponse({ description: 'Image import task not found', type: ErrorDto })
+  async getImportTask(@Param('taskId') taskId: string, @Request() req) {
+    const user = req.user!;
+    const query = new GetImageImportTaskQuery(taskId, user.id as string, user.roles as string[]);
+    const task = await this.queryBus.execute<GetImageImportTaskQuery, ImageImportTask>(query);
+    return ImageImportTaskDto.fromEntity(task);
   }
 
   @Patch(':id')

@@ -13,6 +13,7 @@ export class Image extends BaseAggregateRoot<ImageProps> {
   public originalFilename: string | undefined;
   public altText: string | undefined;
   public metadata: Record<string, string> | undefined;
+  public verified: boolean;
   public owner: string;
   public createdAt: Date;
   public updatedAt: Date | undefined;
@@ -29,6 +30,7 @@ export class Image extends BaseAggregateRoot<ImageProps> {
     this.originalFilename = props.originalFilename;
     this.altText = props.altText;
     this.metadata = props.metadata;
+    this.verified = props.verified;
     this.owner = props.owner;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -61,6 +63,7 @@ export class Image extends BaseAggregateRoot<ImageProps> {
       altText: this.altText,
       metadata: this.metadata,
       owner: this.owner,
+      verified: this.verified,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
@@ -70,6 +73,11 @@ export class Image extends BaseAggregateRoot<ImageProps> {
     if (props.category !== undefined) this.category = props.category;
     if (props.altText !== undefined) this.altText = props.altText;
     if (props.metadata !== undefined) this.metadata = props.metadata;
+    this.updatedAt = new Date();
+  }
+
+  markVerified() {
+    this.verified = true;
     this.updatedAt = new Date();
   }
 
