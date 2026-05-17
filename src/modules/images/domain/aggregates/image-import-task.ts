@@ -47,7 +47,7 @@ export class ImageImportTask extends BaseAggregateRoot<ImageImportTaskProps> {
       verifiedImageIds: [],
       skipped: [],
       errors: [],
-      message: 'La importacion de imagenes esta pendiente de ejecucion',
+      message: 'Image import is pending execution',
       owner: props.owner,
       createdAt: new Date(),
     });
@@ -60,7 +60,7 @@ export class ImageImportTask extends BaseAggregateRoot<ImageImportTaskProps> {
   start(totalObjects: number) {
     this.status = 'running';
     this.totalObjects = totalObjects;
-    this.message = 'La importacion de imagenes esta en ejecucion';
+    this.message = 'Image import is running';
     this.startedAt = new Date();
     this.updatedAt = new Date();
   }
@@ -91,10 +91,7 @@ export class ImageImportTask extends BaseAggregateRoot<ImageImportTaskProps> {
 
   complete() {
     this.status = this.errors.length > 0 ? 'failed' : 'completed';
-    this.message =
-      this.status === 'completed'
-        ? 'La importacion de imagenes ha finalizado correctamente'
-        : 'La importacion de imagenes ha finalizado con errores';
+    this.message = this.status === 'completed' ? 'Image import completed successfully' : 'Image import completed with errors';
     this.completedAt = new Date();
     this.updatedAt = new Date();
   }
