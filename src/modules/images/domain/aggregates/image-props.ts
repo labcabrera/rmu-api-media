@@ -12,6 +12,7 @@ export interface ImageProps {
   originalFilename?: string;
   altText?: string;
   metadata?: Record<string, string>;
+  verified: boolean;
   owner: string;
   createdAt: Date;
   updatedAt?: Date;

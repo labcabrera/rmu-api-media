@@ -47,6 +47,7 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocume
       originalFilename: doc.originalFilename,
       altText: doc.altText,
       metadata: doc.metadata,
+      verified: doc.verified ?? false,
       owner: doc.owner,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
