@@ -27,7 +27,7 @@ docker-stop: ## Stop and remove the container and the local image
 	-docker rmi "$(IMAGE_NAME)" >/dev/null 2>&1
 
 docker-run: ## Rebuild the image and run it on the docker network, following logs
-	@test -f "$(ENV_FILE)" || { echo "Missing $(ENV_FILE). Copy docker-run.env.example to $(ENV_FILE) and provide local secret values." >&2; exit 1; }
+	@test -f "$(ENV_FILE)" || { echo "Missing $(ENV_FILE). Copy .env.docker.example to $(ENV_FILE) and provide local secret values." >&2; exit 1; }
 	$(MAKE) docker-stop
 	$(MAKE) docker-build
 	docker run -d \

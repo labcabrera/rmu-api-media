@@ -25,7 +25,14 @@ Unit specs are matched at `src/**/*.spec.ts` and `test/**/*.spec.ts`; e2e specs 
 
 ## Configuration
 
-`ConfigModule` loads `.env` and validates it with a Joi schema in `src/app.module.ts` — the app fails at startup if required vars are missing. Copy `.env.example`. Required: Mongo URI (`RMU_MONGO_MEDIA_URI`), Keycloak IAM (`RMU_IAM_*`), Kafka (`RMU_KAFKA_*`), S3 (`RMU_MEDIA_S3_REGION`, `RMU_MEDIA_S3_BUCKET`). Add any new env var to that schema.
+`ConfigModule` loads `.env` and validates it with a Joi schema in `src/app.module.ts` — the app fails at startup if required vars are missing. Two templates, both expecting the infrastructure started from `rmu-platform`:
+
+- `.env.example` → `.env`: running on the host (`npm run start:dev`) with `COMPOSE_PROFILES=infrastructure`. Everything is `localhost`; Kafka is `localhost:9093` (the `PLAINTEXT_HOST` listener). `localhost:9092` looks like it works but the broker then advertises `rmu-kafka-broker:9092`, which the host cannot resolve.
+- `.env.docker.example` → `.env.docker`: `make docker-run` on the `rmu-network` Docker network. Uses in-network hostnames (`rmu-mongo`, `rmu-keycloak:8080`, `rmu-kafka-broker:9092`).
+
+In the full Compose stack (`infrastructure,apis`) neither file is used: `rmu-platform/compose.yaml` injects the environment.
+
+Required: Mongo URI (`RMU_MONGO_MEDIA_URI`), Keycloak IAM (`RMU_IAM_*`), Kafka (`RMU_KAFKA_*`), S3 (`RMU_MEDIA_S3_REGION`, `RMU_MEDIA_S3_BUCKET`). Add any new env var to that schema.
 
 ## Architecture
 
