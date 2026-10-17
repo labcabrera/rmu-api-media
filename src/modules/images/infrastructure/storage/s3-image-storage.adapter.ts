@@ -25,7 +25,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     this.bucket = configService.getOrThrow<string>('RMU_MEDIA_S3_BUCKET');
     this.baseFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_BASE_FOLDER') ?? '');
     this.imageFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_IMAGE_FOLDER') ?? '');
-    this.publicBaseUrl = configService.get<string>('RMU_MEDIA_S3_PUBLIC_BASE_URL');
+    this.publicBaseUrl = configService.get<string>('RMU_MEDIA_S3_PUBLIC_BASE_URI');
     this.maxWidth = configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048;
 
     this.client = new S3Client({
