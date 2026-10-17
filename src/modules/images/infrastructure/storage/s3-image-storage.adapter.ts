@@ -11,7 +11,6 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   private readonly bucket: string;
   private readonly baseFolder: string;
   private readonly imageFolder: string;
-  private readonly publicBaseUrl: string | undefined;
   private readonly maxWidth: number;
 
   constructor(configService: ConfigService) {
@@ -25,7 +24,6 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     this.bucket = configService.getOrThrow<string>('RMU_MEDIA_S3_BUCKET');
     this.baseFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_BASE_FOLDER') ?? '');
     this.imageFolder = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_IMAGE_FOLDER') ?? '');
-    this.publicBaseUrl = configService.get<string>('RMU_MEDIA_S3_PUBLIC_BASE_URI');
     this.maxWidth = configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048;
 
     this.client = new S3Client({
@@ -164,8 +162,9 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     return 'image/jpeg';
   }
 
+  // The URL is relative to the root of rmu-mfe-assets, which serves RMU_MEDIA_S3_BASE_FOLDER: the
+  // frontends resolve it against their RMU_MFE_ASSETS_URI, so no public host is stored.
   private buildUrl(storageKey: string) {
-    if (this.publicBaseUrl) return `${this.publicBaseUrl.replace(/\/$/, '')}/${storageKey}`;
-    return `https://${this.bucket}.s3.amazonaws.com/${storageKey}`;
+    return storageKey;
   }
 }

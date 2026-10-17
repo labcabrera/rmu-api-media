@@ -10,7 +10,10 @@ export class ImageDto {
   @ApiProperty({ description: 'Image category', example: 'avatar' })
   category: ImageCategory;
 
-  @ApiProperty({ description: 'Public image URL' })
+  @ApiProperty({
+    description: 'Image URL relative to the root of rmu-mfe-assets (resolved by the frontends against RMU_MFE_ASSETS_URI)',
+    example: 'images/races/elf.png',
+  })
   url: string;
 
   @ApiProperty({ description: 'Stored object key' })
