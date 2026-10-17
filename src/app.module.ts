@@ -25,7 +25,7 @@ import { ImagesModule } from './modules/images/images.module';
         RMU_MEDIA_S3_BUCKET: Joi.string().required(),
         RMU_MEDIA_S3_BASE_FOLDER: Joi.string().allow('').default(''),
         RMU_MEDIA_S3_ENDPOINT: Joi.string().uri().optional(),
-        RMU_MEDIA_S3_PUBLIC_BASE_URL: Joi.string().uri().optional(),
+        RMU_MEDIA_S3_PUBLIC_BASE_URI: Joi.string().uri().optional(),
         RMU_MEDIA_S3_ACCESS_KEY_ID: Joi.string().optional(),
         RMU_MEDIA_S3_SECRET_ACCESS_KEY: Joi.string().optional(),
         RMU_MEDIA_S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
