@@ -53,7 +53,7 @@ Modules:
 Image storage details (`S3ImageStorageAdapter`):
 - Uploads are processed with `sharp`: auto-rotate, resized to `RMU_MEDIA_IMAGE_MAX_WIDTH` (no enlargement), re-encoded as PNG if input is PNG, otherwise JPEG q85.
 - Storage key is `<category>/<imageId>.<png|jpg>`; the S3 object key is that prefixed with `RMU_MEDIA_S3_BASE_FOLDER`. Persisted `storageKey` excludes the base folder.
-- Public URL is `RMU_MEDIA_S3_PUBLIC_BASE_URI/<storageKey>` (falls back to the bucket's S3 URL). `RMU_MEDIA_S3_ENDPOINT` + `FORCE_PATH_STYLE` support S3-compatible stores.
+- `RMU_MEDIA_S3_BASE_FOLDER` is the root of rmu-mfe-assets, so the image `url` is the `storageKey` itself, a path relative to the assets root (`images/<category>/<file>`). Entities store that path and the frontends resolve it against `RMU_MFE_ASSETS_URI`; no public host is stored. `RMU_MEDIA_S3_ENDPOINT` + `FORCE_PATH_STYLE` support S3-compatible stores.
 - Import derives an image's category from the parent folder name of the object key and skips objects already registered (by `storageKey`).
 
 `main.ts` also connects a Kafka microservice transport, so a reachable broker is needed at startup.
