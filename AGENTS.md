@@ -46,7 +46,7 @@ Hexagonal / DDD layout with NestJS CQRS. Each feature module under `src/modules/
 Ports are bound to adapters with **string injection tokens** in the module (e.g. `'ImageRepository'` → `MongoImageRepository`, `'ImageStoragePort'` → `S3ImageStorageAdapter`) and injected with `@Inject('<Token>')`. Controllers only talk to `CommandBus`/`QueryBus`.
 
 Modules:
-- `auth` — Passport JWT strategy validating RS256 tokens against Keycloak JWKS (`RMU_IAM_JWK_URI`). `req.user` is `{ id: sub, roles: groups, ... }`. Controllers use `@UseGuards(JwtAuthGuard)`.
+- `auth` — Passport JWT strategy validating RS256 tokens against Keycloak JWKS (`RMU_IAM_JWK_URI`), with issuer `RMU_IAM_ISSUER_URI` and audience `RMU_IAM_AUDIENCE` (`rmu-api`). `req.user` is `{ id: sub, roles: groups, ... }`. Controllers use `@UseGuards(JwtAuthGuard)`.
 - `shared` — cross-cutting base classes: `MongoBaseRepository` (generic `findById`/`findByRsql`/save/delete with pagination), RSQL parser for the `q` query param (`PagedQueryDto`), `QueryCriteria` + Mongo mapper, `BaseEntityGuard` (RBAC: public/owner/`RMU_ADMIN` checks — not yet wired into images), `DomainError` hierarchy mapped to HTTP status by the global `DomainExceptionFilter`, Kafka producer, health controller.
 - `images` — upload, list (RSQL), update (metadata and/or file), delete, and bulk import of existing S3 objects.
 
