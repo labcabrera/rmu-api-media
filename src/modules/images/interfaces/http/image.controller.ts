@@ -9,44 +9,34 @@ import {
   Patch,
   Post,
   Query,
-  Request,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBody,
-  ApiAcceptedResponse,
-  ApiConsumes,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-  ApiUnauthorizedResponse,
-} from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../auth/jwt.auth.guard';
+import { ApiBody, ApiAcceptedResponse, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../../shared/infrastructure/security/jwt-auth.guard';
+import { ApiErrors } from '../../../shared/interfaces/http/api-errors.decorator';
+import type { AuthenticatedUser } from '../../../shared/interfaces/http/authenticated-request';
+import { CurrentUser } from '../../../shared/interfaces/http/current-user.decorator';
 import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command';
 import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command';
 import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command';
 import { ListImagesQuery } from '../../application/cqrs/queries/list-images.query';
 import { Image } from '../../domain/aggregates/image';
 import type { ImageCategory } from '../../domain/entities/image-category';
-import { Page } from '../../../shared/domain/entities/page';
-import type { AuthenticatedRequest } from '../../../shared/interfaces/http/authenticated-request';
-import { ErrorDto } from '../../../shared/interfaces/http/dto/error-dto';
+import { Page } from '../../../shared/application/pagination/page';
 import { PagedQueryDto } from '../../../shared/interfaces/http/dto/paged-rsql-query';
-import { ImageDto, ImagePageDto } from './dtos/image.dto';
+import { ImageDto, ImagePageDto } from './dto/image.dto';
 import {
   ImageImportTaskDto,
   ImportImagesFromS3FolderDto,
   ImportImagesResultDto as ImportImagesResultDto,
-} from './dtos/import-images-folder.dto';
-import { UpdateImageDto } from './dtos/update-image.dto';
-import type { UploadedImageFile } from './dtos/uploaded-image-file';
-import { UploadImageDto } from './dtos/upload-image.dto';
+} from './dto/import-images-folder.dto';
+import { UpdateImageDto } from './dto/update-image.dto';
+import type { UploadedImageFile } from './dto/uploaded-image-file';
+import { UploadImageDto } from './dto/upload-image.dto';
 import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
 import { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler';
 import { GetImageImportTaskQuery } from '../../application/cqrs/queries/get-image-import-task.query';
@@ -64,10 +54,10 @@ export class ImageController {
   @Get('')
   @ApiOperation({ operationId: 'findImagesByCategory', summary: 'Find images by category' })
   @ApiOkResponse({ type: ImagePageDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  async findByCategory(@Param('category') category: ImageCategory, @Query() dto: PagedQueryDto, @Request() req: AuthenticatedRequest) {
-    const userId = req.user.id;
-    const roles = req.user.roles;
+  @ApiErrors()
+  async findByCategory(@Param('category') category: ImageCategory, @Query() dto: PagedQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    const userId = user.id;
+    const roles = user.roles;
     const query = new ListImagesQuery(dto.q || '', dto.page, dto.size, userId, roles);
     const page = await this.queryBus.execute<ListImagesQuery, Page<Image>>(query);
     const mapped = page.content.map(image => ImageDto.fromEntity(image));
@@ -80,11 +70,9 @@ export class ImageController {
   @ApiBody({ type: UploadImageDto })
   @ApiOperation({ operationId: 'uploadImage', summary: 'Upload a new image' })
   @ApiOkResponse({ type: ImageDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
-  async upload(@Body() dto: UploadImageDto, @UploadedFile() file: UploadedImageFile, @Request() req: AuthenticatedRequest) {
+  @ApiErrors({ 400: 'Bad request, invalid data' })
+  async upload(@Body() dto: UploadImageDto, @UploadedFile() file: UploadedImageFile, @CurrentUser() user: AuthenticatedUser) {
     this.assertImageFile(file, true);
-    const user = req.user;
     const command = UploadImageDto.toCommand(dto, file, user.id, user.roles);
     const image = await this.commandBus.execute<UploadImageCommand, Image>(command);
     return ImageDto.fromEntity(image);
@@ -94,11 +82,9 @@ export class ImageController {
   @ApiBody({ type: ImportImagesFromS3FolderDto })
   @ApiOperation({ operationId: 'importImages', summary: 'Import images' })
   @ApiAcceptedResponse({ type: ImportImagesResultDto, description: 'Import task accepted' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
+  @ApiErrors({ 400: 'Bad request, invalid data' })
   @HttpCode(202)
-  async importFromS3Folder(@Body() dto: ImportImagesFromS3FolderDto, @Request() req: AuthenticatedRequest) {
-    const user = req.user;
+  async importFromS3Folder(@Body() dto: ImportImagesFromS3FolderDto, @CurrentUser() user: AuthenticatedUser) {
     const command = ImportImagesFromS3FolderDto.toCommand(dto, user.id, user.roles);
     const result = await this.commandBus.execute<ImportImagesCommand, ImportImagesResult>(command);
     return ImportImagesResultDto.fromResult(result);
@@ -107,10 +93,8 @@ export class ImageController {
   @Get('import/:taskId')
   @ApiOperation({ operationId: 'getImageImportTask', summary: 'Get image import task result' })
   @ApiOkResponse({ type: ImageImportTaskDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiNotFoundResponse({ description: 'Image import task not found', type: ErrorDto })
-  async getImportTask(@Param('taskId') taskId: string, @Request() req: AuthenticatedRequest) {
-    const user = req.user;
+  @ApiErrors({ 404: 'Image import task not found' })
+  async getImportTask(@Param('taskId') taskId: string, @CurrentUser() user: AuthenticatedUser) {
     const query = new GetImageImportTaskQuery(taskId, user.id, user.roles);
     const task = await this.queryBus.execute<GetImageImportTaskQuery, ImageImportTask>(query);
     return ImageImportTaskDto.fromEntity(task);
@@ -122,17 +106,14 @@ export class ImageController {
   @ApiBody({ type: UpdateImageDto })
   @ApiOperation({ operationId: 'updateImage', summary: 'Update image metadata or content' })
   @ApiOkResponse({ type: ImageDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiNotFoundResponse({ description: 'Image not found', type: ErrorDto })
-  @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
+  @ApiErrors({ 404: 'Image not found', 400: 'Bad request, invalid data' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateImageDto,
     @UploadedFile() file: UploadedImageFile | undefined,
-    @Request() req: AuthenticatedRequest,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     this.assertImageFile(file, false);
-    const user = req.user;
     const command = UpdateImageDto.toCommand(id, dto, file, user.id, user.roles);
     const image = await this.commandBus.execute<UpdateImageCommand, Image>(command);
     return ImageDto.fromEntity(image);
@@ -141,10 +122,8 @@ export class ImageController {
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ operationId: 'deleteImage', summary: 'Delete image by id' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiNotFoundResponse({ description: 'Image not found', type: ErrorDto })
-  async delete(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-    const user = req.user;
+  @ApiErrors({ 404: 'Image not found' })
+  async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     const command = new DeleteImageCommand(id, user.id, user.roles);
     await this.commandBus.execute(command);
   }

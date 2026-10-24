@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { ImageCategory } from '../../domain/entities/image-category';
 import { Image } from '../../domain/aggregates/image';
 import { ImageImportTask } from '../../domain/aggregates/image-import-task';
-import type { ImageImportTaskRepository } from '../ports/image-import-task-repository';
-import type { ImageRepository } from '../ports/image-repository';
-import type { ImageStoragePort, StoredImageObject } from '../ports/image-storage.port';
+import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../ports/image-import-task-repository.port';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../ports/image-repository.port';
+import { type ImageStoragePort, type StoredImageObject, IMAGE_STORAGE_PORT } from '../ports/image-storage.port';
 
 export interface ProcessImageImportTaskInput {
   task: ImageImportTask;
@@ -18,9 +18,9 @@ export class ImageImportTaskProcessor {
   private readonly logger = new Logger(ImageImportTaskProcessor.name);
 
   constructor(
-    @Inject('ImageRepository') private readonly imageRepository: ImageRepository,
-    @Inject('ImageImportTaskRepository') private readonly taskRepository: ImageImportTaskRepository,
-    @Inject('ImageStoragePort') private readonly imageStorage: ImageStoragePort,
+    @Inject(IMAGE_REPOSITORY) private readonly imageRepository: ImageRepository,
+    @Inject(IMAGE_IMPORT_TASK_REPOSITORY) private readonly taskRepository: ImageImportTaskRepository,
+    @Inject(IMAGE_STORAGE_PORT) private readonly imageStorage: ImageStoragePort,
     private readonly configService: ConfigService,
   ) {}
 

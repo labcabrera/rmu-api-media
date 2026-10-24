@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ImageImportTaskRepository } from '../../application/ports/image-import-task-repository';
+import { ImageImportTaskRepository } from '../../application/ports/image-import-task-repository.port';
 import { ImageImportTask } from '../../domain/aggregates/image-import-task';
 import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository';
-import { RsqlParser } from '../../../shared/infrastructure/persistence/repositories/rsql-parser';
-import { ImageImportTaskDocument, ImageImportTaskModel } from '../persistence/models/image-import-task-model';
+import { RsqlParser } from '../../../shared/infrastructure/db/rsql-parser';
+import { ImageImportTaskDocument, ImageImportTaskModel } from '../persistence/models/image-import-task.model';
 
 @Injectable()
 export class MongoImageImportTaskRepository

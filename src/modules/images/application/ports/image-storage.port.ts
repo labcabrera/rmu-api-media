@@ -30,3 +30,5 @@ export interface ImageStoragePort {
   list(prefix: string): Promise<StoredImageObject[]>;
   delete(storageKey: string): Promise<void>;
 }
+
+export const IMAGE_STORAGE_PORT = Symbol('ImageStoragePort');
