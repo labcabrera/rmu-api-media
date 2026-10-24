@@ -2,6 +2,7 @@ import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { Image } from '../../../domain/aggregates/image.js';
 import { UploadImageCommand } from '../commands/upload-image.command.js';
+import { IMAGE_GUARD, type ImageGuardPort } from '../../ports/image-guard.port.js';
 import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
 import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
 
@@ -12,10 +13,13 @@ export class UploadImageHandler implements ICommandHandler<UploadImageCommand, I
   constructor(
     @Inject(IMAGE_REPOSITORY) private readonly imageRepository: ImageRepository,
     @Inject(IMAGE_STORAGE_PORT) private readonly imageStorage: ImageStoragePort,
+    @Inject(IMAGE_GUARD) private readonly imageGuard: ImageGuardPort,
   ) {}
 
   async execute(command: UploadImageCommand): Promise<Image> {
     this.logger.log(`Uploading image in category ${command.category} for user ${command.userId}`);
+
+    this.imageGuard.checkCreate(command.roles);
 
     const image = Image.create({
       category: command.category,
