@@ -90,8 +90,9 @@ export class ImageImportTaskProcessor {
       const current = await this.imageRepository.findByStorageKey(object.storageKey);
       if (current) {
         current.markVerified();
-        const updated = await this.imageRepository.update(current);
-        task.addVerified(updated.id);
+        // An image already verified by an earlier import is not written again.
+        if (current.hasChanges()) await this.imageRepository.update(current);
+        task.addVerified(current.id);
         return;
       }
 
