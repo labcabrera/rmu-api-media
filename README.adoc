@@ -42,7 +42,7 @@ make check             # lint, typecheck, unit and e2e tests
 | `pnpm build` / `pnpm typecheck` | SWC build to `dist/` / `tsc --noEmit`
 | `pnpm lint` / `pnpm format` | typed ESLint + Prettier / Prettier over `src` and `test`
 | `pnpm test` | unit tests (`test/unit`)
-| `pnpm test:e2e` | one file per resource booting `AppModule` against mongodb-memory-server, with tokens signed against a local JWKS; calls to other APIs and the Kafka producer are replaced (`test/e2e/support`)
+| `pnpm test:e2e` | one file per resource booting `AppModule` against mongodb-memory-server, with tokens signed against a local JWKS; S3 answers from an in-memory bucket (`test/e2e/support`)
 | `pnpm test:cov` | unit and e2e tests with the coverage thresholds of `vitest.config.ts` (what CI runs)
 | `make docker-build` / `make docker-run` | image `labcabrera/rmu-api-media:latest` (`node:24-bookworm-slim`, `node` user, `HEALTHCHECK`); `docker-run` needs `.env.docker`
 | `make create-release` | semantic-release from a clean `develop` into `master`
