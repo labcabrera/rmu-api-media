@@ -61,13 +61,13 @@ describe('authentication', () => {
     expect(response.status).toBe(401);
   });
 
-  // F-media-06: no endpoint checks the roles, so a token without groups lists, uploads and deletes images.
+  // Images have no accessType: any authenticated user reads them (spec 021, decision 2).
   it('lets a user without roles list the images', async () => {
     const response = await request(e2e.server).get('/v1/images').set('Authorization', e2e.auth('noRole'));
     expect(response.status).toBe(200);
   });
 
-  it.skip('rejects an upload from a user without roles [F-media-06]', async () => {
+  it('rejects an upload from a user without roles [F-media-06]', async () => {
     const response = await upload('noRole');
     expect(response.status).toBe(403);
   });
@@ -245,17 +245,7 @@ describe('update', () => {
     expect(after).toEqual(before);
   });
 
-  // F-media-06: the handlers do not check the owner.
-  it('lets another user change an image', async () => {
-    const created = (await upload('owner')).body as ImageBody;
-    const response = await request(e2e.server)
-      .patch(`/v1/images/${created.id}`)
-      .set('Authorization', e2e.auth('other'))
-      .field('altText', 'Not mine');
-    expect(response.status).toBe(200);
-  });
-
-  it.skip('rejects a change from another user [F-media-06]', async () => {
+  it('rejects a change from another user [F-media-06]', async () => {
     const created = (await upload('owner')).body as ImageBody;
     const response = await request(e2e.server)
       .patch(`/v1/images/${created.id}`)
@@ -275,14 +265,7 @@ describe('delete', () => {
     expect(again.status).toBe(404);
   });
 
-  // F-media-06
-  it('lets another user delete an image', async () => {
-    const created = (await upload('owner')).body as ImageBody;
-    const response = await request(e2e.server).delete(`/v1/images/${created.id}`).set('Authorization', e2e.auth('other'));
-    expect(response.status).toBe(204);
-  });
-
-  it.skip('rejects a deletion from another user [F-media-06]', async () => {
+  it('rejects a deletion from another user [F-media-06]', async () => {
     const created = (await upload('owner')).body as ImageBody;
     const response = await request(e2e.server).delete(`/v1/images/${created.id}`).set('Authorization', e2e.auth('other'));
     expect(response.status).toBe(403);
@@ -340,9 +323,83 @@ describe('import from S3', () => {
     expect(response.status).toBe(404);
   });
 
-  // F-media-06: importing a whole folder is open to any user.
-  it.skip('rejects an import from a user that is not admin [F-media-06]', async () => {
+  it('rejects an import from a user that is not admin [F-media-06]', async () => {
     const response = await request(e2e.server).post('/v1/images/import').set('Authorization', e2e.auth('owner')).send({ folder: 'images' });
     expect(response.status).toBe(403);
+  });
+});
+
+describe('permissions [F-media-06]', () => {
+  type Caller = 'owner' | 'other' | 'admin' | 'noRole' | 'none';
+  const as = (test: request.Test, caller: Caller) => (caller === 'none' ? test : test.set('Authorization', e2e.auth(caller)));
+  const ownImage = async () => ((await upload('owner')).body as ImageBody).id;
+
+  it.each<[Caller, number]>([
+    ['owner', 201],
+    ['admin', 201],
+    ['noRole', 403],
+    ['none', 401],
+  ])('upload as %s answers %i', async (caller, status) => {
+    const test = as(request(e2e.server).post('/v1/images'), caller)
+      .field('category', 'avatars')
+      .attach('file', await picture('png'), { filename: 'e2e.png', contentType: 'image/png' });
+    expect((await test).status).toBe(status);
+  });
+
+  it.each<[Caller, number]>([
+    ['owner', 200],
+    ['other', 403],
+    ['admin', 200],
+    ['noRole', 403],
+    ['none', 401],
+  ])('update of the image of owner as %s answers %i', async (caller, status) => {
+    const id = await ownImage();
+    const response = await as(request(e2e.server).patch(`/v1/images/${id}`), caller).field('altText', `By ${caller}`);
+    expect(response.status).toBe(status);
+    if (status === 403) expect((response.body as { code: string }).code).toBe('forbidden');
+  });
+
+  it.each<[Caller, number]>([
+    ['owner', 204],
+    ['other', 403],
+    ['admin', 204],
+    ['noRole', 403],
+    ['none', 401],
+  ])('delete of the image of owner as %s answers %i', async (caller, status) => {
+    const id = await ownImage();
+    const response = await as(request(e2e.server).delete(`/v1/images/${id}`), caller);
+    expect(response.status).toBe(status);
+    if (status === 403) {
+      const still = await request(e2e.server)
+        .get('/v1/images')
+        .query({ q: `id==${id}` })
+        .set('Authorization', e2e.auth('admin'));
+      expect(ids(still.body)).toEqual([id]);
+    }
+  });
+
+  it.each<[Caller, number]>([
+    ['owner', 403],
+    ['admin', 202],
+    ['noRole', 403],
+    ['none', 401],
+  ])('import as %s answers %i', async (caller, status) => {
+    const response = await as(request(e2e.server).post('/v1/images/import'), caller).send({ folder: 'images/empty' });
+    expect(response.status).toBe(status);
+  });
+
+  it.each<[Caller, number]>([
+    ['owner', 403],
+    ['admin', 200],
+    ['noRole', 403],
+    ['none', 401],
+  ])('reading an import task of admin as %s answers %i', async (caller, status) => {
+    const started = await request(e2e.server)
+      .post('/v1/images/import')
+      .set('Authorization', e2e.auth('admin'))
+      .send({ folder: 'images/empty' });
+    const taskId = (started.body as { taskId: string }).taskId;
+    const response = await as(request(e2e.server).get(`/v1/images/import/${taskId}`), caller);
+    expect(response.status).toBe(status);
   });
 });

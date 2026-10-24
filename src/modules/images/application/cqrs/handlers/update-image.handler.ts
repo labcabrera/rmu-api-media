@@ -2,6 +2,7 @@ import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { Image } from '../../../domain/aggregates/image.js';
 import { UpdateImageCommand } from '../commands/update-image.command.js';
+import { IMAGE_GUARD, type ImageGuardPort } from '../../ports/image-guard.port.js';
 import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
 import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
 import { NotFoundError } from '../../../../shared/domain/errors/errors.js';
@@ -13,6 +14,7 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
   constructor(
     @Inject(IMAGE_REPOSITORY) private readonly imageRepository: ImageRepository,
     @Inject(IMAGE_STORAGE_PORT) private readonly imageStorage: ImageStoragePort,
+    @Inject(IMAGE_GUARD) private readonly imageGuard: ImageGuardPort,
   ) {}
 
   async execute(command: UpdateImageCommand): Promise<Image> {
@@ -20,6 +22,7 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
 
     const image = await this.imageRepository.findById(command.id);
     if (!image) throw new NotFoundError('Image', command.id);
+    this.imageGuard.checkUpdate(image, command.userId, command.roles);
     image.checkVersion(command.expectedVersion);
 
     image.updateMetadata({

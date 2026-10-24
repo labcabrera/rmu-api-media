@@ -15,11 +15,14 @@ import { MongoImageRepository } from './infrastructure/db/mongo.image.repository
 import { ImageImportTaskModel, ImageImportTaskSchema } from './infrastructure/persistence/models/image-import-task.model.js';
 import { ImageModel, ImageSchema } from './infrastructure/persistence/models/image.model.js';
 import { S3ImageStorageAdapter } from './infrastructure/storage/s3-image-storage.adapter.js';
+import { ImageGuardAdapter } from './infrastructure/security/image-guard.adapter.js';
 import { ImageController } from './interfaces/http/image.controller.js';
 
 import { IMAGE_IMPORT_TASK_REPOSITORY } from './application/ports/image-import-task-repository.port.js';
 import { IMAGE_REPOSITORY } from './application/ports/image-repository.port.js';
 import { IMAGE_STORAGE_PORT } from './application/ports/image-storage.port.js';
+import { IMAGE_GUARD } from './application/ports/image-guard.port.js';
+
 @Module({
   imports: [
     CqrsModule,
@@ -46,6 +49,10 @@ import { IMAGE_STORAGE_PORT } from './application/ports/image-storage.port.js';
     {
       provide: IMAGE_IMPORT_TASK_REPOSITORY,
       useClass: MongoImageImportTaskRepository,
+    },
+    {
+      provide: IMAGE_GUARD,
+      useClass: ImageGuardAdapter,
     },
     {
       provide: IMAGE_STORAGE_PORT,
