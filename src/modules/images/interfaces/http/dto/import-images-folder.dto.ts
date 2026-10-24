@@ -1,10 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ImportImagesCommand } from '../../../application/cqrs/commands/import-images-from-s3-folder.command';
-import type { ImportImagesResult } from '../../../application/cqrs/handlers/import-images.handler';
-import { ImageImportTask } from '../../../domain/aggregates/image-import-task';
-import type { ImageImportTaskError, ImageImportTaskStatus } from '../../../domain/aggregates/image-import-task-props';
-import { parseMetadata } from './upload-image.dto';
+import { ImportImagesCommand } from '../../../application/cqrs/commands/import-images-from-s3-folder.command.js';
+import type { ImportImagesResult } from '../../../application/cqrs/handlers/import-images.handler.js';
+import { ImageImportTask } from '../../../domain/aggregates/image-import-task.js';
+import type { ImageImportTaskError, ImageImportTaskStatus } from '../../../domain/aggregates/image-import-task-props.js';
+import { parseMetadata } from './upload-image.dto.js';
 
 export class ImportImagesFromS3FolderDto {
   @ApiProperty({ description: 'S3 folder or prefix to scan recursively', example: 'imports/avatars/' })

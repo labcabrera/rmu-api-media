@@ -1,9 +1,9 @@
 import { Inject, Logger } from '@nestjs/common';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { ImportImagesCommand } from '../commands/import-images-from-s3-folder.command';
-import { ImageImportTask } from '../../../domain/aggregates/image-import-task';
-import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../../ports/image-import-task-repository.port';
-import { ImageImportTaskProcessor } from '../../services/image-import-task.processor';
+import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { ImportImagesCommand } from '../commands/import-images-from-s3-folder.command.js';
+import { ImageImportTask } from '../../../domain/aggregates/image-import-task.js';
+import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../../ports/image-import-task-repository.port.js';
+import { ImageImportTaskProcessor } from '../../services/image-import-task.processor.js';
 
 export interface ImportImagesResult {
   taskId: string;

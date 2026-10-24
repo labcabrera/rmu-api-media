@@ -1,9 +1,9 @@
 import { Inject } from '@nestjs/common';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { Page } from '../../../../shared/application/pagination/page';
-import { Image } from '../../../domain/aggregates/image';
-import { ListImagesQuery } from '../queries/list-images.query';
-import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port';
+import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { Page } from '../../../../shared/application/pagination/page.js';
+import { Image } from '../../../domain/aggregates/image.js';
+import { ListImagesQuery } from '../queries/list-images.query.js';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
 
 @QueryHandler(ListImagesQuery)
 export class ListImagesHandler implements IQueryHandler<ListImagesQuery, Page<Image>> {

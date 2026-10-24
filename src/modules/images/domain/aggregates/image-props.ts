@@ -1,4 +1,4 @@
-import type { ImageCategory } from '../entities/image-category';
+import type { ImageCategory } from '../entities/image-category.js';
 
 export interface ImageProps {
   id: string;

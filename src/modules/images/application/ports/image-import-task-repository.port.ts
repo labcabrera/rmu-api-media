@@ -1,5 +1,5 @@
-import { BaseRepository } from '../../../shared/application/ports/base-repository.port';
-import { ImageImportTask } from '../../domain/aggregates/image-import-task';
+import type { BaseRepository } from '../../../shared/application/ports/base-repository.port.js';
+import { ImageImportTask } from '../../domain/aggregates/image-import-task.js';
 
 export type ImageImportTaskRepository = BaseRepository<ImageImportTask>;
 

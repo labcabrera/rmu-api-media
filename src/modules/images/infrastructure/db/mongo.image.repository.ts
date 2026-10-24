@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ImageRepository } from '../../application/ports/image-repository.port';
-import { Image } from '../../domain/aggregates/image';
-import type { ImageCategory } from '../../domain/entities/image-category';
-import { Page } from '../../../shared/application/pagination/page';
-import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository';
-import { RsqlParser } from '../../../shared/infrastructure/db/rsql-parser';
-import { ImageDocument, ImageModel } from '../persistence/models/image.model';
+import type { ImageRepository } from '../../application/ports/image-repository.port.js';
+import { Image } from '../../domain/aggregates/image.js';
+import type { ImageCategory } from '../../domain/entities/image-category.js';
+import { Page } from '../../../shared/application/pagination/page.js';
+import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository.js';
+import { RsqlParser } from '../../../shared/infrastructure/db/rsql-parser.js';
+import { type ImageDocument, ImageModel } from '../persistence/models/image.model.js';
 
 @Injectable()
 export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocument> implements ImageRepository {

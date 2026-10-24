@@ -1,9 +1,9 @@
 import { Inject } from '@nestjs/common';
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../../ports/image-import-task-repository.port';
-import { ImageImportTask } from '../../../domain/aggregates/image-import-task';
-import { GetImageImportTaskQuery } from '../queries/get-image-import-task.query';
-import { NotFoundError } from '../../../../shared/domain/errors/errors';
+import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../../ports/image-import-task-repository.port.js';
+import { ImageImportTask } from '../../../domain/aggregates/image-import-task.js';
+import { GetImageImportTaskQuery } from '../queries/get-image-import-task.query.js';
+import { NotFoundError } from '../../../../shared/domain/errors/errors.js';
 
 @QueryHandler(GetImageImportTaskQuery)
 export class GetImageImportTaskHandler implements IQueryHandler<GetImageImportTaskQuery, ImageImportTask> {

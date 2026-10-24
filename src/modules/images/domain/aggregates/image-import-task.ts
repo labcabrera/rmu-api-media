@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { BaseAggregateRoot } from '../../../shared/domain/aggregates/base-aggregate';
-import type { ImageImportTaskError, ImageImportTaskProps, ImageImportTaskStatus } from './image-import-task-props';
+import { BaseAggregateRoot } from '../../../shared/domain/aggregates/base-aggregate.js';
+import type { ImageImportTaskError, ImageImportTaskProps, ImageImportTaskStatus } from './image-import-task-props.js';
 
 export class ImageImportTask extends BaseAggregateRoot<ImageImportTaskProps> {
   public folder: string;

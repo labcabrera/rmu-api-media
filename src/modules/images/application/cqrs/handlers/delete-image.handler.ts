@@ -1,9 +1,9 @@
 import { Inject, Logger } from '@nestjs/common';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { DeleteImageCommand } from '../commands/delete-image.command';
-import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port';
-import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port';
-import { NotFoundError } from '../../../../shared/domain/errors/errors';
+import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { DeleteImageCommand } from '../commands/delete-image.command.js';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
+import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
+import { NotFoundError } from '../../../../shared/domain/errors/errors.js';
 
 @CommandHandler(DeleteImageCommand)
 export class DeleteImageHandler implements ICommandHandler<DeleteImageCommand> {
