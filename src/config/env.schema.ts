@@ -1,0 +1,26 @@
+import Joi from 'joi';
+
+export const envSchema = Joi.object({
+  PORT: Joi.number().positive().default(3011),
+  LOG_LEVEL: Joi.string().default('info'),
+  RMU_MONGO_MEDIA_URI: Joi.string().required(),
+  RMU_IAM_URI: Joi.string().uri().default('http://localhost/sso'),
+  RMU_IAM_REALM: Joi.string().default('rmu'),
+  RMU_IAM_JWK_URI: Joi.string().uri().required(),
+  RMU_IAM_ISSUER_URI: Joi.string().uri().required(),
+  RMU_IAM_AUDIENCE: Joi.string().required(),
+  RMU_KAFKA_BROKERS: Joi.string().required(),
+  RMU_KAFKA_CLIENT_ID: Joi.string().required(),
+  RMU_KAFKA_CONSUMER_GROUP_ID: Joi.string().required(),
+  RMU_KAFKA_DEFAULT_PARTITIONS: Joi.number().integer().min(1).default(1),
+  RMU_MEDIA_S3_REGION: Joi.string().required(),
+  RMU_MEDIA_S3_BUCKET: Joi.string().required(),
+  RMU_MEDIA_S3_BASE_FOLDER: Joi.string().allow('').default(''),
+  RMU_MEDIA_S3_ENDPOINT: Joi.string().uri().optional(),
+  RMU_MEDIA_S3_ACCESS_KEY_ID: Joi.string().optional(),
+  RMU_MEDIA_S3_SECRET_ACCESS_KEY: Joi.string().optional(),
+  RMU_MEDIA_S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
+  RMU_MEDIA_IMAGE_MAX_WIDTH: Joi.number().integer().min(1).default(2048),
+  RMU_MEDIA_IMAGE_IMPORT_PARALLELISM: Joi.number().integer().min(1).default(4),
+  RMU_MEDIA_IMAGE_IMPORT_BATCH_SIZE: Joi.number().integer().min(1).default(50),
+});

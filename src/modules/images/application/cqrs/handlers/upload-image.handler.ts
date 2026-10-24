@@ -2,16 +2,16 @@ import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Image } from '../../../domain/aggregates/image';
 import { UploadImageCommand } from '../commands/upload-image.command';
-import type { ImageRepository } from '../../ports/image-repository';
-import type { ImageStoragePort } from '../../ports/image-storage.port';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port';
+import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port';
 
 @CommandHandler(UploadImageCommand)
 export class UploadImageHandler implements ICommandHandler<UploadImageCommand, Image> {
   private readonly logger = new Logger(UploadImageHandler.name);
 
   constructor(
-    @Inject('ImageRepository') private readonly imageRepository: ImageRepository,
-    @Inject('ImageStoragePort') private readonly imageStorage: ImageStoragePort,
+    @Inject(IMAGE_REPOSITORY) private readonly imageRepository: ImageRepository,
+    @Inject(IMAGE_STORAGE_PORT) private readonly imageStorage: ImageStoragePort,
   ) {}
 
   async execute(command: UploadImageCommand): Promise<Image> {
