@@ -22,6 +22,7 @@ import { ImagesModule } from './modules/images/images.module';
         RMU_IAM_CLIENT_SECRET: Joi.string().required(),
         RMU_KAFKA_BROKERS: Joi.string().required(),
         RMU_KAFKA_CLIENT_ID: Joi.string().required(),
+        RMU_KAFKA_CONSUMER_GROUP_ID: Joi.string().required(),
         RMU_KAFKA_DEFAULT_PARTITIONS: Joi.number().integer().min(1).default(1),
         RMU_MEDIA_S3_REGION: Joi.string().required(),
         RMU_MEDIA_S3_BUCKET: Joi.string().required(),
