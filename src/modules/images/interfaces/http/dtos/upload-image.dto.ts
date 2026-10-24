@@ -1,16 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { UploadImageCommand } from 'src/modules/images/application/cqrs/commands/upload-image.command';
-import { IMAGE_CATEGORIES } from 'src/modules/images/domain/entities/image-category';
-import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
+import { UploadImageCommand } from '../../../application/cqrs/commands/upload-image.command';
+import { IMAGE_CATEGORIES } from '../../../domain/entities/image-category';
+import type { ImageCategory } from '../../../domain/entities/image-category';
 import type { UploadedImageFile } from './uploaded-image-file';
 
 export class UploadImageDto {
   @ApiProperty({ type: 'string', format: 'binary', description: 'Image file' })
   file: unknown;
 
-  @ApiProperty({ description: 'Image category', enum: IMAGE_CATEGORIES, example: 'generic' })
+  @ApiProperty({ type: String, description: 'Image category', enum: IMAGE_CATEGORIES, example: 'generic' })
   @IsString()
   @IsIn(IMAGE_CATEGORIES)
   category: ImageCategory;

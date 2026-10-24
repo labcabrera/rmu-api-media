@@ -3,7 +3,7 @@ import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import type { ImageImportTaskRepository } from '../../ports/image-import-task-repository';
 import { ImageImportTask } from '../../../domain/aggregates/image-import-task';
 import { GetImageImportTaskQuery } from '../queries/get-image-import-task.query';
-import { NotFoundError } from 'src/modules/shared/domain/errors/errors';
+import { NotFoundError } from '../../../../shared/domain/errors/errors';
 
 @QueryHandler(GetImageImportTaskQuery)
 export class GetImageImportTaskHandler implements IQueryHandler<GetImageImportTaskQuery, ImageImportTask> {

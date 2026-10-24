@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ImageImportTaskRepository } from 'src/modules/images/application/ports/image-import-task-repository';
-import { ImageImportTask } from 'src/modules/images/domain/aggregates/image-import-task';
-import { MongoBaseRepository } from 'src/modules/shared/infrastructure/db/mongo.base.repository';
-import { RsqlParser } from 'src/modules/shared/infrastructure/persistence/repositories/rsql-parser';
+import { ImageImportTaskRepository } from '../../application/ports/image-import-task-repository';
+import { ImageImportTask } from '../../domain/aggregates/image-import-task';
+import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository';
+import { RsqlParser } from '../../../shared/infrastructure/persistence/repositories/rsql-parser';
 import { ImageImportTaskDocument, ImageImportTaskModel } from '../persistence/models/image-import-task-model';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class MongoImageImportTaskRepository
 
   protected mapToEntity(doc: ImageImportTaskDocument): ImageImportTask {
     return ImageImportTask.fromProps({
-      id: doc.id as string,
+      id: doc.id,
       folder: doc.folder,
       status: doc.status,
       totalObjects: doc.totalObjects,

@@ -3,7 +3,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { DeleteImageCommand } from '../commands/delete-image.command';
 import type { ImageRepository } from '../../ports/image-repository';
 import type { ImageStoragePort } from '../../ports/image-storage.port';
-import { NotFoundError } from 'src/modules/shared/domain/errors/errors';
+import { NotFoundError } from '../../../../shared/domain/errors/errors';
 
 @CommandHandler(DeleteImageCommand)
 export class DeleteImageHandler implements ICommandHandler<DeleteImageCommand> {

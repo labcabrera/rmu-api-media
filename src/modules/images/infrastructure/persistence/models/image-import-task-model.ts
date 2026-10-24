@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import type { ImageImportTaskError, ImageImportTaskStatus } from 'src/modules/images/domain/aggregates/image-import-task-props';
+import type { HydratedDocument } from 'mongoose';
+import type { ImageImportTaskError, ImageImportTaskStatus } from '../../../domain/aggregates/image-import-task-props';
 
-export type ImageImportTaskDocument = ImageImportTaskModel & Document;
+export type ImageImportTaskDocument = HydratedDocument<ImageImportTaskModel>;
 
 @Schema({ collection: 'image_import_tasks', versionKey: false })
 export class ImageImportTaskModel {
@@ -12,7 +12,7 @@ export class ImageImportTaskModel {
   @Prop({ required: true, index: true })
   folder: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   status: ImageImportTaskStatus;
 
   @Prop({ required: true, default: 0 })

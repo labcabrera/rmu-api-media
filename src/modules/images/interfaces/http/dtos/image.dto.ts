@@ -1,13 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Image } from 'src/modules/images/domain/aggregates/image';
-import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
-import { PaginationDto } from 'src/modules/shared/interfaces/http/dto/page.dto';
+import { Image } from '../../../domain/aggregates/image';
+import type { ImageCategory } from '../../../domain/entities/image-category';
+import { PaginationDto } from '../../../../shared/interfaces/http/dto/page.dto';
 
 export class ImageDto {
   @ApiProperty({ description: 'Unique image identifier' })
   id: string;
 
-  @ApiProperty({ description: 'Image category', example: 'avatar' })
+  @ApiProperty({ type: String, description: 'Image category', example: 'avatar' })
   category: ImageCategory;
 
   @ApiProperty({

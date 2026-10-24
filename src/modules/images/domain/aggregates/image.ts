@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { BaseAggregateRoot } from 'src/modules/shared/domain/aggregates/base-aggregate';
+import { BaseAggregateRoot } from '../../../shared/domain/aggregates/base-aggregate';
 import type { ImageProps } from './image-props';
 
 export class Image extends BaseAggregateRoot<ImageProps> {

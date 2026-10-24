@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ImportImagesCommand } from 'src/modules/images/application/cqrs/commands/import-images-from-s3-folder.command';
-import type { ImportImagesResult } from 'src/modules/images/application/cqrs/handlers/import-images.handler';
-import { ImageImportTask } from 'src/modules/images/domain/aggregates/image-import-task';
-import type { ImageImportTaskError, ImageImportTaskStatus } from 'src/modules/images/domain/aggregates/image-import-task-props';
+import { ImportImagesCommand } from '../../../application/cqrs/commands/import-images-from-s3-folder.command';
+import type { ImportImagesResult } from '../../../application/cqrs/handlers/import-images.handler';
+import { ImageImportTask } from '../../../domain/aggregates/image-import-task';
+import type { ImageImportTaskError, ImageImportTaskStatus } from '../../../domain/aggregates/image-import-task-props';
 import { parseMetadata } from './upload-image.dto';
 
 export class ImportImagesFromS3FolderDto {
@@ -44,7 +44,7 @@ export class ImageImportTaskDto {
   @ApiProperty({ description: 'S3 folder or prefix scanned recursively' })
   folder: string;
 
-  @ApiProperty({ description: 'Task status', enum: ['pending', 'running', 'completed', 'failed'] })
+  @ApiProperty({ type: String, description: 'Task status', enum: ['pending', 'running', 'completed', 'failed'] })
   status: ImageImportTaskStatus;
 
   @ApiProperty({ description: 'Total S3 objects found' })
