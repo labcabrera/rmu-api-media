@@ -70,7 +70,7 @@ export class ImageDto {
 }
 
 export class ImagePageDto {
-  @ApiProperty({ type: [ImageDto], description: 'Images', isArray: true })
+  @ApiProperty({ type: [ImageDto], description: 'Images' })
   content: ImageDto[];
 
   @ApiProperty({ type: PaginationDto, description: 'Pagination information' })

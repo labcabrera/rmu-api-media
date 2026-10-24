@@ -6,6 +6,7 @@ import type { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
 import request from 'supertest';
 import { configureHttp } from '../../../src/bootstrap/http.js';
+import { configureOpenApi } from '../../../src/bootstrap/openapi.js';
 import { KafkaProducerService } from '../../../src/modules/shared/infrastructure/messaging/kafka-producer.service.js';
 import { AUDIENCE, ISSUER, LocalJwks } from './jwks.js';
 
@@ -67,7 +68,7 @@ function fakeS3(bucket: Bucket) {
 }
 
 /**
- * Boots the whole AppModule as main.ts does (configureHttp) against an in-memory Mongo and a local JWKS. The Kafka
+ * Boots the whole AppModule as main.ts does (configureHttp, configureOpenApi) against an in-memory Mongo and a local JWKS. The Kafka
  * producer is replaced, and the S3 client answers from an in-memory bucket, so uploads still go through sharp.
  * AppModule is imported after setting the environment, because ConfigModule.forRoot() reads it when the module is
  * evaluated.
@@ -103,6 +104,7 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: ['error'] });
   configureHttp(app);
+  configureOpenApi(app);
   await app.init();
 
   return {
