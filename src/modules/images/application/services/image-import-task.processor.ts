@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ImageCategory } from 'src/modules/images/domain/entities/image-category';
+import { ImageCategory } from '../../domain/entities/image-category';
 import { Image } from '../../domain/aggregates/image';
 import { ImageImportTask } from '../../domain/aggregates/image-import-task';
 import type { ImageImportTaskRepository } from '../ports/image-import-task-repository';

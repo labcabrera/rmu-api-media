@@ -4,7 +4,7 @@ import { Image } from '../../../domain/aggregates/image';
 import { UpdateImageCommand } from '../commands/update-image.command';
 import type { ImageRepository } from '../../ports/image-repository';
 import type { ImageStoragePort } from '../../ports/image-storage.port';
-import { NotFoundError } from 'src/modules/shared/domain/errors/errors';
+import { NotFoundError } from '../../../../shared/domain/errors/errors';
 
 @CommandHandler(UpdateImageCommand)
 export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, Image> {

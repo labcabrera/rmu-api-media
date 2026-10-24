@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ImageRepository } from 'src/modules/images/application/ports/image-repository';
-import { Image } from 'src/modules/images/domain/aggregates/image';
-import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
-import { Page } from 'src/modules/shared/domain/entities/page';
-import { MongoBaseRepository } from 'src/modules/shared/infrastructure/db/mongo.base.repository';
-import { RsqlParser } from 'src/modules/shared/infrastructure/persistence/repositories/rsql-parser';
+import { ImageRepository } from '../../application/ports/image-repository';
+import { Image } from '../../domain/aggregates/image';
+import type { ImageCategory } from '../../domain/entities/image-category';
+import { Page } from '../../../shared/domain/entities/page';
+import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository';
+import { RsqlParser } from '../../../shared/infrastructure/persistence/repositories/rsql-parser';
 import { ImageDocument, ImageModel } from '../persistence/models/image-model';
 
 @Injectable()
@@ -36,7 +36,7 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocume
 
   protected mapToEntity(doc: ImageDocument): Image {
     return Image.fromProps({
-      id: doc.id as string,
+      id: doc.id,
       category: doc.category,
       storageKey: doc.storageKey,
       url: doc.url,

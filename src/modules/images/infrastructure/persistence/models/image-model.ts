@@ -1,15 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
+import type { HydratedDocument } from 'mongoose';
+import type { ImageCategory } from '../../../domain/entities/image-category';
 
-export type ImageDocument = ImageModel & Document;
+export type ImageDocument = HydratedDocument<ImageModel>;
 
 @Schema({ collection: 'images', versionKey: false })
 export class ImageModel {
   @Prop({ required: true })
   _id: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   category: ImageCategory;
 
   @Prop({ required: true, unique: true, index: true })

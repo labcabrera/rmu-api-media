@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { FilterQuery, Model } from 'mongoose';
-import { RsqlParser } from 'src/modules/shared/infrastructure/persistence/repositories/rsql-parser';
-import { Page } from 'src/modules/shared/domain/entities/page';
-import { NotFoundError } from 'src/modules/shared/domain/errors/errors';
+import type { QueryFilter, Model } from 'mongoose';
+import { RsqlParser } from '../persistence/repositories/rsql-parser';
+import { Page } from '../../domain/entities/page';
+import { NotFoundError } from '../../domain/errors/errors';
 import { BaseAggregateRoot } from '../../domain/aggregates/base-aggregate';
 import { Logger } from '@nestjs/common';
-import { QueryCriteria, SortCriteria } from 'src/modules/shared/application/criteria/query-criteria';
+import { QueryCriteria, SortCriteria } from '../../application/criteria/query-criteria';
 import { MongoQueryCriteriaMapper } from '../persistence/repositories/mongo-query-criteria.mapper';
 
 export abstract class MongoBaseRepository<E extends BaseAggregateRoot<any>, D> {
@@ -26,7 +26,7 @@ export abstract class MongoBaseRepository<E extends BaseAggregateRoot<any>, D> {
     const rsqlParsed = this.rsqlParser.parse(rsql);
     const accessFilter = MongoQueryCriteriaMapper.toFilterQuery(filter);
 
-    let mongoQuery: FilterQuery<any>;
+    let mongoQuery: QueryFilter<any>;
     if (!rsqlParsed || Object.keys(rsqlParsed).length === 0) {
       mongoQuery = accessFilter;
     } else if (Object.keys(accessFilter).length === 0) {

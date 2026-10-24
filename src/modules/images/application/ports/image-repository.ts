@@ -1,5 +1,5 @@
-import { Page } from 'src/modules/shared/domain/entities/page';
-import { BaseRepository } from 'src/modules/shared/application/ports/base-repository';
+import { Page } from '../../../shared/domain/entities/page';
+import { BaseRepository } from '../../../shared/application/ports/base-repository';
 import { Image } from '../../domain/aggregates/image';
 import type { ImageCategory } from '../../domain/entities/image-category';
 
