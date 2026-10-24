@@ -230,6 +230,21 @@ describe('update', () => {
     expect(withoutVersion.body as { version: number; altText: string }).toMatchObject({ version: 2, altText: 'Latest' });
   });
 
+  it('does not write a change that leaves the image as it was [F-receta-23]', async () => {
+    const created = (await upload('owner')).body as ImageBody & { version: number };
+    const images = e2e.connection.collection('images');
+    const before = await images.findOne({ _id: created.id as never });
+    const response = await request(e2e.server)
+      .patch(`/v1/images/${created.id}`)
+      .set('Authorization', e2e.auth('owner'))
+      .field('altText', created.altText!)
+      .field('category', created.category);
+    expect(response.status).toBe(200);
+    expect((response.body as { version: number }).version).toBe(0);
+    const after = await images.findOne({ _id: created.id as never });
+    expect(after).toEqual(before);
+  });
+
   // F-media-06: the handlers do not check the owner.
   it('lets another user change an image', async () => {
     const created = (await upload('owner')).body as ImageBody;

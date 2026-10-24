@@ -51,6 +51,8 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
       if (previousStorageKey && previousStorageKey !== stored.storageKey) await this.imageStorage.delete(previousStorageKey);
     }
 
+    // A PATCH that changes nothing does not write (spec 021, decision 9).
+    if (!image.hasChanges()) return image;
     return await this.imageRepository.update(image);
   }
 }
