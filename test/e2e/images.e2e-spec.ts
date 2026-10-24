@@ -159,7 +159,8 @@ describe('list', () => {
     expect(accepted.status).toBe(200);
     const rejected = await request(e2e.server).get('/v1/images').query({ size: 101 }).set('Authorization', e2e.auth('owner'));
     expect(rejected.status).toBe(400);
-    expect((rejected.body as { code: string }).code).toBe('bad-request');
+    // The path of the error body leaves the query out [F-receta-22].
+    expect(rejected.body).toMatchObject({ code: 'bad-request', path: '/v1/images' });
   });
 });
 
