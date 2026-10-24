@@ -189,7 +189,7 @@ describe('update', () => {
     expect(e2e.bucket.has(`${BASE_FOLDER}/${updated.storageKey}`)).toBe(true);
   });
 
-  // F-media-07: the new category only changes the metadata: the stored object keeps the key of the old category.
+  // F-media-07 (descartado): the storage key is fixed when the image is uploaded; a new category only changes the metadata.
   it('keeps the object under the old category when the category changes', async () => {
     const created = (await upload('owner')).body as ImageBody;
     const response = await request(e2e.server)
@@ -306,16 +306,16 @@ describe('import from S3', () => {
     expect(counts(second)).toMatchObject({ status: 'completed', imported: 0, verified: 1 });
   });
 
-  // F-media-09: the category of an imported image is the parent folder name, without checking it is a category.
-  it('stores the parent folder as category even when it is not one', async () => {
+  it('does not import the objects of a folder that is not a category and counts them as errors [F-media-09]', async () => {
     e2e.bucket.set(`${BASE_FOLDER}/images/unknown-folder/a.png`, { body: await picture('png'), contentType: 'image/png' });
     const task = await importFolder('images/unknown-folder');
-    expect(counts(task).imported).toBe(1);
+    expect(counts(task)).toMatchObject({ status: 'failed', imported: 0, verified: 0 });
+    expect(task.errors).toEqual([{ storageKey: 'images/unknown-folder/a.png', message: 'Folder unknown-folder is not an image category' }]);
     const list = await request(e2e.server)
       .get('/v1/images')
       .query({ q: 'category==unknown-folder' })
       .set('Authorization', e2e.auth('admin'));
-    expect(ids(list.body)).toHaveLength(1);
+    expect(ids(list.body)).toHaveLength(0);
   });
 
   it('answers 404 to an unknown task', async () => {
