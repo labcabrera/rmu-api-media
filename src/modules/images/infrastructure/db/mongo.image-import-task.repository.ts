@@ -9,10 +9,10 @@ import { type ImageImportTaskDocument, ImageImportTaskModel } from '../persisten
 
 @Injectable()
 export class MongoImageImportTaskRepository
-  extends MongoBaseRepository<ImageImportTask, ImageImportTaskDocument>
+  extends MongoBaseRepository<ImageImportTask, ImageImportTaskModel>
   implements ImageImportTaskRepository
 {
-  constructor(@InjectModel(ImageImportTaskModel.name) taskModel: Model<ImageImportTaskDocument>, rsqlParser: RsqlParser) {
+  constructor(@InjectModel(ImageImportTaskModel.name) taskModel: Model<ImageImportTaskModel>, rsqlParser: RsqlParser) {
     super(taskModel, rsqlParser);
   }
 

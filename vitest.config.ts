@@ -13,7 +13,7 @@ export default defineConfig({
       exclude: ['src/main.ts', 'src/**/*.module.ts'],
       reporter: ['text', 'lcov', 'html'],
       // Floor of the unit and e2e suites together: set when the e2e suite lands (spec 020, phase 4), never lowered.
-      thresholds: { lines: 70, statements: 67, functions: 72, branches: 45 },
+      thresholds: { lines: 73, statements: 70, functions: 74, branches: 51 },
     },
     projects: [
       {

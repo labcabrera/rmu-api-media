@@ -10,8 +10,8 @@ import { RsqlParser } from '../../../shared/infrastructure/db/rsql-parser.js';
 import { type ImageDocument, ImageModel } from '../persistence/models/image.model.js';
 
 @Injectable()
-export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocument> implements ImageRepository {
-  constructor(@InjectModel(ImageModel.name) imageModel: Model<ImageDocument>, rsqlParser: RsqlParser) {
+export class MongoImageRepository extends MongoBaseRepository<Image, ImageModel> implements ImageRepository {
+  constructor(@InjectModel(ImageModel.name) imageModel: Model<ImageModel>, rsqlParser: RsqlParser) {
     super(imageModel, rsqlParser);
   }
 
@@ -22,7 +22,7 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocume
       this.model.countDocuments({ category }),
     ]);
     return new Page<Image>(
-      docs.map(doc => this.mapToEntity(doc)),
+      docs.map(doc => this.toEntity(doc)),
       page,
       size,
       totalElements,
@@ -31,7 +31,7 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocume
 
   async findByStorageKey(storageKey: string): Promise<Image | null> {
     const doc = await this.model.findOne({ storageKey });
-    return doc ? this.mapToEntity(doc) : null;
+    return doc ? this.toEntity(doc) : null;
   }
 
   protected mapToEntity(doc: ImageDocument): Image {

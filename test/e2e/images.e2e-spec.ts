@@ -154,10 +154,12 @@ describe('list', () => {
     expect(response.status).toBe(400);
   });
 
-  // F-media-08: `size` has no maximum, so a client can ask for the whole collection at once.
-  it('accepts any page size', async () => {
-    const response = await request(e2e.server).get('/v1/images').query({ size: 100_000 }).set('Authorization', e2e.auth('owner'));
-    expect(response.status).toBe(200);
+  it('accepts pages of up to 100 images', async () => {
+    const accepted = await request(e2e.server).get('/v1/images').query({ size: 100 }).set('Authorization', e2e.auth('owner'));
+    expect(accepted.status).toBe(200);
+    const rejected = await request(e2e.server).get('/v1/images').query({ size: 101 }).set('Authorization', e2e.auth('owner'));
+    expect(rejected.status).toBe(400);
+    expect((rejected.body as { code: string }).code).toBe('bad-request');
   });
 });
 
@@ -197,9 +199,35 @@ describe('update', () => {
     expect((response.body as ImageBody).storageKey).toBe(created.storageKey);
   });
 
-  it('answers 404 to an unknown image', async () => {
+  it('answers 404 to an unknown image, in the common error format', async () => {
     const response = await request(e2e.server).patch('/v1/images/unknown').set('Authorization', e2e.auth('owner')).field('altText', 'x');
     expect(response.status).toBe(404);
+    expect(response.body).toMatchObject({ statusCode: 404, error: 'NotFoundError', code: 'not-found', path: '/v1/images/unknown' });
+    expect(typeof (response.body as { timestamp: string }).timestamp).toBe('string');
+  });
+
+  it('counts the writes in the version and rejects a change made on a stale version', async () => {
+    const created = (await upload('owner')).body as ImageBody & { version: number };
+    expect(created.version).toBe(0);
+    const first = await request(e2e.server)
+      .patch(`/v1/images/${created.id}`)
+      .set('Authorization', e2e.auth('owner'))
+      .field('altText', 'First')
+      .field('version', '0');
+    expect(first.status).toBe(200);
+    expect((first.body as { version: number }).version).toBe(1);
+    const stale = await request(e2e.server)
+      .patch(`/v1/images/${created.id}`)
+      .set('Authorization', e2e.auth('owner'))
+      .field('altText', 'Stale')
+      .field('version', '0');
+    expect(stale.status).toBe(409);
+    expect((stale.body as { code: string }).code).toBe('version-conflict');
+    const withoutVersion = await request(e2e.server)
+      .patch(`/v1/images/${created.id}`)
+      .set('Authorization', e2e.auth('owner'))
+      .field('altText', 'Latest');
+    expect(withoutVersion.body as { version: number; altText: string }).toMatchObject({ version: 2, altText: 'Latest' });
   });
 
   // F-media-06: the handlers do not check the owner.

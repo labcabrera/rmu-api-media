@@ -20,6 +20,7 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
 
     const image = await this.imageRepository.findById(command.id);
     if (!image) throw new NotFoundError('Image', command.id);
+    image.checkVersion(command.expectedVersion);
 
     image.updateMetadata({
       category: command.category,
@@ -50,6 +51,6 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
       if (previousStorageKey && previousStorageKey !== stored.storageKey) await this.imageStorage.delete(previousStorageKey);
     }
 
-    return await this.imageRepository.update(image.id, image);
+    return await this.imageRepository.update(image);
   }
 }

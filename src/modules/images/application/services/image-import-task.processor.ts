@@ -30,7 +30,7 @@ export class ImageImportTaskProcessor {
     try {
       const objects = await this.imageStorage.list(task.folder);
       task.start(objects.length);
-      await this.taskRepository.update(task.id, task);
+      await this.taskRepository.update(task);
 
       const batchSize = this.getPositiveConfig('RMU_MEDIA_IMAGE_IMPORT_BATCH_SIZE', 50);
       const parallelism = this.getPositiveConfig('RMU_MEDIA_IMAGE_IMPORT_PARALLELISM', 4);
@@ -42,16 +42,16 @@ export class ImageImportTaskProcessor {
       for (let index = 0; index < objects.length; index += batchSize) {
         const batch = objects.slice(index, index + batchSize);
         await this.processBatch(batch, task, input.metadata, input.userId, parallelism);
-        await this.taskRepository.update(task.id, task);
+        await this.taskRepository.update(task);
       }
 
       task.complete();
-      await this.taskRepository.update(task.id, task);
+      await this.taskRepository.update(task);
     } catch (error) {
       const message = `Image import error: ${(error as Error).message}`;
       this.logger.error(message, (error as Error).stack);
       task.fail(message);
-      await this.taskRepository.update(task.id, task);
+      await this.taskRepository.update(task);
     }
   }
 
@@ -90,7 +90,7 @@ export class ImageImportTaskProcessor {
       const current = await this.imageRepository.findByStorageKey(object.storageKey);
       if (current) {
         current.markVerified();
-        const updated = await this.imageRepository.update(current.id, current);
+        const updated = await this.imageRepository.update(current);
         task.addVerified(updated.id);
         return;
       }

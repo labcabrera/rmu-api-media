@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { UpdateImageCommand } from '../../../application/cqrs/commands/update-image.command.js';
 import { IMAGE_CATEGORIES } from '../../../domain/entities/image-category.js';
 import type { ImageCategory } from '../../../domain/entities/image-category.js';
@@ -26,6 +27,13 @@ export class UpdateImageDto {
   @IsOptional()
   metadata?: string;
 
+  @ApiPropertyOptional({ description: 'Version the client read (from the GET); a different stored version is a 409', example: 3 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  version?: number;
+
   static toCommand(id: string, dto: UpdateImageDto, file: UploadedImageFile | undefined, userId: string, userRoles: string[]) {
     return new UpdateImageCommand(
       id,
@@ -37,6 +45,7 @@ export class UpdateImageDto {
       parseMetadata(dto.metadata),
       userId,
       userRoles,
+      dto.version,
     );
   }
 }
