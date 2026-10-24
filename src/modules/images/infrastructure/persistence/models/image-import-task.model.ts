@@ -4,7 +4,8 @@ import type { ImageImportTaskError, ImageImportTaskStatus } from '../../../domai
 
 export type ImageImportTaskDocument = HydratedDocument<ImageImportTaskModel>;
 
-@Schema({ collection: 'image_import_tasks', versionKey: false })
+// `errors` is a reserved name of Mongoose documents; renaming it would need a migration of the stored tasks (F-media-04).
+@Schema({ collection: 'image_import_tasks', versionKey: false, suppressReservedKeysWarning: true })
 export class ImageImportTaskModel {
   @Prop({ required: true })
   _id: string;

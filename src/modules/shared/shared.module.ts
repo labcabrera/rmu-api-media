@@ -5,7 +5,6 @@ import { HttpThrottlerGuard } from './infrastructure/http/http-throttler.guard.j
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 import { AuthModule } from './infrastructure/security/auth.module.js';
-import { KafkaProducerService } from './infrastructure/messaging/kafka-producer.service.js';
 import { HealthController } from './interfaces/http/health.controller.js';
 import { TerminusModule } from '@nestjs/terminus';
 import { RsqlParser } from './infrastructure/db/rsql-parser.js';
@@ -26,7 +25,7 @@ import { RsqlParser } from './infrastructure/db/rsql-parser.js';
     }),
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: HttpThrottlerGuard }, RsqlParser, KafkaProducerService],
-  exports: [RsqlParser, KafkaProducerService],
+  providers: [{ provide: APP_GUARD, useClass: HttpThrottlerGuard }, RsqlParser],
+  exports: [RsqlParser],
 })
 export class SharedModule {}

@@ -7,7 +7,6 @@ import { getConnectionToken } from '@nestjs/mongoose';
 import request from 'supertest';
 import { configureHttp } from '../../../src/bootstrap/http.js';
 import { configureOpenApi } from '../../../src/bootstrap/openapi.js';
-import { KafkaProducerService } from '../../../src/modules/shared/infrastructure/messaging/kafka-producer.service.js';
 import { AUDIENCE, ISSUER, LocalJwks } from './jwks.js';
 
 export type Server = Parameters<typeof request>[0];
@@ -68,8 +67,8 @@ function fakeS3(bucket: Bucket) {
 }
 
 /**
- * Boots the whole AppModule as main.ts does (configureHttp, configureOpenApi) against an in-memory Mongo and a local JWKS. The Kafka
- * producer is replaced, and the S3 client answers from an in-memory bucket, so uploads still go through sharp.
+ * Boots the whole AppModule as main.ts does (configureHttp, configureOpenApi) against an in-memory Mongo and a local JWKS.
+ * The S3 client answers from an in-memory bucket, so uploads still go through sharp.
  * AppModule is imported after setting the environment, because ConfigModule.forRoot() reads it when the module is
  * evaluated.
  */
@@ -82,9 +81,6 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
     RMU_IAM_JWK_URI: jwks.uri,
     RMU_IAM_ISSUER_URI: ISSUER,
     RMU_IAM_AUDIENCE: AUDIENCE,
-    RMU_KAFKA_BROKERS: 'localhost:9092',
-    RMU_KAFKA_CLIENT_ID: 'rmu-api-media-e2e',
-    RMU_KAFKA_CONSUMER_GROUP_ID: 'rmu-api-media-e2e',
     RMU_MEDIA_S3_REGION: 'eu-west-1',
     RMU_MEDIA_S3_BUCKET: BUCKET,
     RMU_MEDIA_S3_BASE_FOLDER: BASE_FOLDER,
@@ -98,10 +94,7 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
   const bucket: Bucket = new Map();
   const s3 = fakeS3(bucket);
   const { AppModule } = await import('../../../src/app.module.js');
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(KafkaProducerService)
-    .useValue({ emit: () => Promise.resolve() })
-    .compile();
+  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: ['error'] });
   configureHttp(app);
   configureOpenApi(app);
