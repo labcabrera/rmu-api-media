@@ -2,7 +2,7 @@ import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObject
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
-import type { ImageStoragePort, StoredImageObject, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port';
+import type { ImageStoragePort, StoredImageObject, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port.js';
 
 @Injectable()
 export class S3ImageStorageAdapter implements ImageStoragePort {

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Image } from '../../../domain/aggregates/image';
-import type { ImageCategory } from '../../../domain/entities/image-category';
-import { PaginationDto } from '../../../../shared/interfaces/http/dto/page.dto';
+import { Image } from '../../../domain/aggregates/image.js';
+import type { ImageCategory } from '../../../domain/entities/image-category.js';
+import { PaginationDto } from '../../../../shared/interfaces/http/dto/page.dto.js';
 
 export class ImageDto {
   @ApiProperty({ description: 'Unique image identifier' })

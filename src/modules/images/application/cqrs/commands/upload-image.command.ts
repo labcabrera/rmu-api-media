@@ -1,5 +1,5 @@
-import { AuthenticatedCommand } from '../../../../shared/application/cqrs/authenticated-command';
-import type { ImageCategory } from '../../../domain/entities/image-category';
+import { AuthenticatedCommand } from '../../../../shared/application/cqrs/authenticated-command.js';
+import type { ImageCategory } from '../../../domain/entities/image-category.js';
 
 export class UploadImageCommand extends AuthenticatedCommand {
   constructor(

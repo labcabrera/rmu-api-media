@@ -1,9 +1,9 @@
 import { Inject, Logger } from '@nestjs/common';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Image } from '../../../domain/aggregates/image';
-import { UploadImageCommand } from '../commands/upload-image.command';
-import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port';
-import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port';
+import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { Image } from '../../../domain/aggregates/image.js';
+import { UploadImageCommand } from '../commands/upload-image.command.js';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
+import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
 
 @CommandHandler(UploadImageCommand)
 export class UploadImageHandler implements ICommandHandler<UploadImageCommand, Image> {

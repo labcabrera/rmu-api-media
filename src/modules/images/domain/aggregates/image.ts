@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import { BaseAggregateRoot } from '../../../shared/domain/aggregates/base-aggregate';
-import type { ImageProps } from './image-props';
+import { BaseAggregateRoot } from '../../../shared/domain/aggregates/base-aggregate.js';
+import type { ImageProps } from './image-props.js';
 
 export class Image extends BaseAggregateRoot<ImageProps> {
   public category: ImageProps['category'];

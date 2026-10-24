@@ -1,25 +1,25 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from '../shared/infrastructure/security/auth.module';
-import { SharedModule } from '../shared/shared.module';
-import { DeleteImageHandler } from './application/cqrs/handlers/delete-image.handler';
-import { GetImageImportTaskHandler } from './application/cqrs/handlers/get-image-import-task.handler';
-import { ImportImagesHandler } from './application/cqrs/handlers/import-images.handler';
-import { ListImagesHandler } from './application/cqrs/handlers/list-images.handler';
-import { UpdateImageHandler } from './application/cqrs/handlers/update-image.handler';
-import { UploadImageHandler } from './application/cqrs/handlers/upload-image.handler';
-import { ImageImportTaskProcessor } from './application/services/image-import-task.processor';
-import { MongoImageImportTaskRepository } from './infrastructure/db/mongo.image-import-task.repository';
-import { MongoImageRepository } from './infrastructure/db/mongo.image.repository';
-import { ImageImportTaskModel, ImageImportTaskSchema } from './infrastructure/persistence/models/image-import-task.model';
-import { ImageModel, ImageSchema } from './infrastructure/persistence/models/image.model';
-import { S3ImageStorageAdapter } from './infrastructure/storage/s3-image-storage.adapter';
-import { ImageController } from './interfaces/http/image.controller';
+import { AuthModule } from '../shared/infrastructure/security/auth.module.js';
+import { SharedModule } from '../shared/shared.module.js';
+import { DeleteImageHandler } from './application/cqrs/handlers/delete-image.handler.js';
+import { GetImageImportTaskHandler } from './application/cqrs/handlers/get-image-import-task.handler.js';
+import { ImportImagesHandler } from './application/cqrs/handlers/import-images.handler.js';
+import { ListImagesHandler } from './application/cqrs/handlers/list-images.handler.js';
+import { UpdateImageHandler } from './application/cqrs/handlers/update-image.handler.js';
+import { UploadImageHandler } from './application/cqrs/handlers/upload-image.handler.js';
+import { ImageImportTaskProcessor } from './application/services/image-import-task.processor.js';
+import { MongoImageImportTaskRepository } from './infrastructure/db/mongo.image-import-task.repository.js';
+import { MongoImageRepository } from './infrastructure/db/mongo.image.repository.js';
+import { ImageImportTaskModel, ImageImportTaskSchema } from './infrastructure/persistence/models/image-import-task.model.js';
+import { ImageModel, ImageSchema } from './infrastructure/persistence/models/image.model.js';
+import { S3ImageStorageAdapter } from './infrastructure/storage/s3-image-storage.adapter.js';
+import { ImageController } from './interfaces/http/image.controller.js';
 
-import { IMAGE_IMPORT_TASK_REPOSITORY } from './application/ports/image-import-task-repository.port';
-import { IMAGE_REPOSITORY } from './application/ports/image-repository.port';
-import { IMAGE_STORAGE_PORT } from './application/ports/image-storage.port';
+import { IMAGE_IMPORT_TASK_REPOSITORY } from './application/ports/image-import-task-repository.port.js';
+import { IMAGE_REPOSITORY } from './application/ports/image-repository.port.js';
+import { IMAGE_STORAGE_PORT } from './application/ports/image-storage.port.js';
 @Module({
   imports: [
     CqrsModule,

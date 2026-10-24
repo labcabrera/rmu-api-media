@@ -16,31 +16,31 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiAcceptedResponse, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../shared/infrastructure/security/jwt-auth.guard';
-import { ApiErrors } from '../../../shared/interfaces/http/api-errors.decorator';
-import type { AuthenticatedUser } from '../../../shared/interfaces/http/authenticated-request';
-import { CurrentUser } from '../../../shared/interfaces/http/current-user.decorator';
-import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command';
-import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command';
-import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command';
-import { ListImagesQuery } from '../../application/cqrs/queries/list-images.query';
-import { Image } from '../../domain/aggregates/image';
-import type { ImageCategory } from '../../domain/entities/image-category';
-import { Page } from '../../../shared/application/pagination/page';
-import { PagedQueryDto } from '../../../shared/interfaces/http/dto/paged-rsql-query';
-import { ImageDto, ImagePageDto } from './dto/image.dto';
+import { JwtAuthGuard } from '../../../shared/infrastructure/security/jwt-auth.guard.js';
+import { ApiErrors } from '../../../shared/interfaces/http/api-errors.decorator.js';
+import type { AuthenticatedUser } from '../../../shared/interfaces/http/authenticated-request.js';
+import { CurrentUser } from '../../../shared/interfaces/http/current-user.decorator.js';
+import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command.js';
+import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command.js';
+import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command.js';
+import { ListImagesQuery } from '../../application/cqrs/queries/list-images.query.js';
+import { Image } from '../../domain/aggregates/image.js';
+import type { ImageCategory } from '../../domain/entities/image-category.js';
+import { Page } from '../../../shared/application/pagination/page.js';
+import { PagedQueryDto } from '../../../shared/interfaces/http/dto/paged-rsql-query.js';
+import { ImageDto, ImagePageDto } from './dto/image.dto.js';
 import {
   ImageImportTaskDto,
   ImportImagesFromS3FolderDto,
   ImportImagesResultDto as ImportImagesResultDto,
-} from './dto/import-images-folder.dto';
-import { UpdateImageDto } from './dto/update-image.dto';
-import type { UploadedImageFile } from './dto/uploaded-image-file';
-import { UploadImageDto } from './dto/upload-image.dto';
-import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
-import { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler';
-import { GetImageImportTaskQuery } from '../../application/cqrs/queries/get-image-import-task.query';
-import { ImageImportTask } from '../../domain/aggregates/image-import-task';
+} from './dto/import-images-folder.dto.js';
+import { UpdateImageDto } from './dto/update-image.dto.js';
+import type { UploadedImageFile } from './dto/uploaded-image-file.js';
+import { UploadImageDto } from './dto/upload-image.dto.js';
+import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command.js';
+import type { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler.js';
+import { GetImageImportTaskQuery } from '../../application/cqrs/queries/get-image-import-task.query.js';
+import { ImageImportTask } from '../../domain/aggregates/image-import-task.js';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/images')

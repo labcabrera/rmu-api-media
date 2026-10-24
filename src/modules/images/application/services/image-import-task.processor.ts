@@ -1,11 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ImageCategory } from '../../domain/entities/image-category';
-import { Image } from '../../domain/aggregates/image';
-import { ImageImportTask } from '../../domain/aggregates/image-import-task';
-import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../ports/image-import-task-repository.port';
-import { type ImageRepository, IMAGE_REPOSITORY } from '../ports/image-repository.port';
-import { type ImageStoragePort, type StoredImageObject, IMAGE_STORAGE_PORT } from '../ports/image-storage.port';
+import type { ImageCategory } from '../../domain/entities/image-category.js';
+import { Image } from '../../domain/aggregates/image.js';
+import { ImageImportTask } from '../../domain/aggregates/image-import-task.js';
+import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../ports/image-import-task-repository.port.js';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../ports/image-repository.port.js';
+import { type ImageStoragePort, type StoredImageObject, IMAGE_STORAGE_PORT } from '../ports/image-storage.port.js';
 
 export interface ProcessImageImportTaskInput {
   task: ImageImportTask;

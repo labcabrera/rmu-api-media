@@ -1,10 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { UpdateImageCommand } from '../../../application/cqrs/commands/update-image.command';
-import { IMAGE_CATEGORIES } from '../../../domain/entities/image-category';
-import type { ImageCategory } from '../../../domain/entities/image-category';
-import { parseMetadata } from './upload-image.dto';
-import type { UploadedImageFile } from './uploaded-image-file';
+import { UpdateImageCommand } from '../../../application/cqrs/commands/update-image.command.js';
+import { IMAGE_CATEGORIES } from '../../../domain/entities/image-category.js';
+import type { ImageCategory } from '../../../domain/entities/image-category.js';
+import { parseMetadata } from './upload-image.dto.js';
+import type { UploadedImageFile } from './uploaded-image-file.js';
 
 export class UpdateImageDto {
   @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Image file' })

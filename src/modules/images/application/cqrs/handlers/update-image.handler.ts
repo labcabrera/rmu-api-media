@@ -1,10 +1,10 @@
 import { Inject, Logger } from '@nestjs/common';
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { Image } from '../../../domain/aggregates/image';
-import { UpdateImageCommand } from '../commands/update-image.command';
-import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port';
-import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port';
-import { NotFoundError } from '../../../../shared/domain/errors/errors';
+import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { Image } from '../../../domain/aggregates/image.js';
+import { UpdateImageCommand } from '../commands/update-image.command.js';
+import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
+import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
+import { NotFoundError } from '../../../../shared/domain/errors/errors.js';
 
 @CommandHandler(UpdateImageCommand)
 export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, Image> {

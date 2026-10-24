@@ -1,4 +1,4 @@
-import type { ImageCategory } from '../../domain/entities/image-category';
+import type { ImageCategory } from '../../domain/entities/image-category.js';
 
 export interface StoreImageInput {
   imageId: string;

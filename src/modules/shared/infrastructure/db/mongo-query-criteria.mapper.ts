@@ -1,5 +1,5 @@
 import type { QueryFilter } from 'mongoose';
-import { QueryCriteria, SortCriteria } from '../../application/criteria/query-criteria';
+import { QueryCriteria, type SortCriteria } from '../../application/criteria/query-criteria.js';
 
 type MongoSort = Record<string, 1 | -1>;
 
