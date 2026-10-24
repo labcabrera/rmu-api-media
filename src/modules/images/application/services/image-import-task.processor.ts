@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { ImageCategory } from '../../domain/entities/image-category.js';
+import { IMAGE_CATEGORIES, type ImageCategory } from '../../domain/entities/image-category.js';
 import { Image } from '../../domain/aggregates/image.js';
 import { ImageImportTask } from '../../domain/aggregates/image-import-task.js';
 import { type ImageImportTaskRepository, IMAGE_IMPORT_TASK_REPOSITORY } from '../ports/image-import-task-repository.port.js';
@@ -87,6 +87,13 @@ export class ImageImportTaskProcessor {
         return;
       }
 
+      // The category is the parent folder: an object outside a category folder is not imported (F-media-09).
+      const category = object.storageKey.split('/').slice(-2, -1)[0];
+      if (!isImageCategory(category)) {
+        task.addError({ storageKey: object.storageKey, message: `Folder ${category ?? '(none)'} is not an image category` });
+        return;
+      }
+
       const current = await this.imageRepository.findByStorageKey(object.storageKey);
       if (current) {
         current.markVerified();
@@ -97,7 +104,7 @@ export class ImageImportTaskProcessor {
       }
 
       const image = Image.create({
-        category: object.storageKey.split('/').slice(-2, -1)[0] as ImageCategory,
+        category,
         storageKey: object.storageKey,
         url: object.url,
         contentType: object.contentType,
@@ -133,4 +140,8 @@ export class ImageImportTaskProcessor {
     const value = this.configService.get<number>(key) ?? defaultValue;
     return Number.isInteger(value) && value > 0 ? value : defaultValue;
   }
+}
+
+function isImageCategory(value: string | undefined): value is ImageCategory {
+  return (IMAGE_CATEGORIES as readonly string[]).includes(value ?? '');
 }
