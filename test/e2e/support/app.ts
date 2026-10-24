@@ -89,6 +89,8 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
     RMU_MEDIA_S3_BASE_FOLDER: BASE_FOLDER,
     RMU_MEDIA_S3_IMAGE_FOLDER: 'images',
     RMU_MEDIA_IMAGE_MAX_WIDTH: '64',
+    RMU_THROTTLE_LIMIT: '0',
+    RMU_CORS_ORIGINS: '',
     ...env,
   });
 

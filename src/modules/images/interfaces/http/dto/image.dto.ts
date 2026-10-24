@@ -46,9 +46,13 @@ export class ImageDto {
   @ApiProperty({ description: 'Owner user id' })
   owner: string;
 
+  @ApiProperty({ description: 'Version of optimistic concurrency: send it back in the PATCH to detect a concurrent change', example: 0 })
+  version: number;
+
   static fromEntity(entity: Image): ImageDto {
     const dto = new ImageDto();
     dto.id = entity.id;
+    dto.version = entity.version;
     dto.category = entity.category;
     dto.url = entity.url;
     dto.storageKey = entity.storageKey;
