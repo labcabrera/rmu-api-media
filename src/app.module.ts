@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/shared/infrastructure/security/auth.module.js';
 import { envSchema } from './config/env.schema.js';
 import { SharedModule } from './modules/shared/shared.module.js';
+import { StatsModule } from './modules/stats/stats.module.js';
 import { ImagesModule } from './modules/images/images.module.js';
 
 @Module({
@@ -22,6 +23,7 @@ import { ImagesModule } from './modules/images/images.module.js';
     }),
     AuthModule,
     SharedModule,
+    StatsModule,
     ImagesModule,
   ],
 })
