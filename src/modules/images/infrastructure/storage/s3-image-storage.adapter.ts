@@ -1,8 +1,8 @@
-import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
-import type { ImageStoragePort, StoredImageObject, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port.js';
+import type { ImageStoragePort, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port.js';
 
 @Injectable()
 export class S3ImageStorageAdapter implements ImageStoragePort {
@@ -64,38 +64,6 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     };
   }
 
-  async list(prefix: string): Promise<StoredImageObject[]> {
-    const objects: StoredImageObject[] = [];
-    let continuationToken: string | undefined;
-
-    do {
-      const page = await this.client.send(
-        new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: this.toS3Prefix(prefix),
-          ContinuationToken: continuationToken,
-        }),
-      );
-
-      for (const item of page.Contents ?? []) {
-        if (!item.Key || item.Key.endsWith('/')) continue;
-        const storageKey = this.toStorageKey(item.Key);
-        const head = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: item.Key }));
-        objects.push({
-          storageKey,
-          url: this.buildUrl(storageKey),
-          contentType: head.ContentType ?? this.inferContentType(storageKey),
-          sizeBytes: item.Size ?? head.ContentLength ?? 0,
-          lastModified: item.LastModified,
-        });
-      }
-
-      continuationToken = page.NextContinuationToken;
-    } while (continuationToken);
-
-    return objects;
-  }
-
   async delete(storageKey: string): Promise<void> {
     if (!storageKey) return;
     const s3Key = this.toS3Key(storageKey);
@@ -140,26 +108,6 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     const normalizedStorageKey = this.normalizePrefix(storageKey);
     if (!this.baseFolder) return normalizedStorageKey;
     return normalizedStorageKey ? `${this.baseFolder}/${normalizedStorageKey}` : this.baseFolder;
-  }
-
-  private toS3Prefix(prefix: string) {
-    const s3Key = this.toS3Key(prefix);
-    return s3Key ? `${s3Key}/` : '';
-  }
-
-  private toStorageKey(s3Key: string) {
-    const normalizedS3Key = this.normalizePrefix(s3Key);
-    if (!this.baseFolder) return normalizedS3Key;
-    if (normalizedS3Key === this.baseFolder) return '';
-    return normalizedS3Key.startsWith(`${this.baseFolder}/`) ? normalizedS3Key.slice(this.baseFolder.length + 1) : normalizedS3Key;
-  }
-
-  private inferContentType(storageKey: string) {
-    const lowered = storageKey.toLowerCase();
-    if (lowered.endsWith('.png')) return 'image/png';
-    if (lowered.endsWith('.webp')) return 'image/webp';
-    if (lowered.endsWith('.gif')) return 'image/gif';
-    return 'image/jpeg';
   }
 
   // The URL is relative to the root of rmu-mfe-assets, which serves RMU_MEDIA_S3_BASE_FOLDER: the

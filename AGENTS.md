@@ -48,7 +48,7 @@ Hexagonal / DDD layout with NestJS CQRS. Each feature module under `src/modules/
 
 Modules:
 - `shared` — `infrastructure/security` (`AuthModule`, Passport JWT strategy validating RS256 tokens against `RMU_IAM_JWK_URI` with issuer and audience checks, `JwtAuthGuard`, `BaseEntityGuard`, which `ImageGuardAdapter` applies to images), `MongoBaseRepository` (RSQL search with paging, `update(entity)` conditional on `version`), the RSQL parser, the `DomainError` hierarchy mapped by the global `HttpExceptionFilter` to `{ statusCode, error, code, message, timestamp, path }`, `PagedQueryDto` (`size` ≤ 100), throttler guard and health controller.
-- `images` — permissions (spec 021, decision 2; `IMAGE_GUARD`): any authenticated user lists images, `rmu-user` or `rmu-admin` uploads, the owner or `rmu-admin` changes and deletes, only `rmu-admin` imports from S3 and reads the import tasks of others. Upload, list (RSQL), update (metadata and/or file, optional `version` → 409 `version-conflict` when stale), delete, and bulk import of existing S3 objects.
+- `images` — permissions (spec 021, decision 2; `IMAGE_GUARD`): any authenticated user lists images, `rmu-user` or `rmu-admin` uploads, the owner or `rmu-admin` changes and deletes. Upload, list (RSQL), update (metadata and/or file, optional `version` → 409 `version-conflict` when stale) and delete. The bulk import of existing S3 objects was removed in spec 057.
 
 `src/main.ts` is short: `src/bootstrap/` sets the HTTP layer (helmet, CORS, `trust proxy`, validation), the logger levels and OpenAPI.
 
@@ -57,7 +57,6 @@ Image storage details (`S3ImageStorageAdapter`):
 - Storage key is `<category>/<imageId>.<png|jpg>`; the S3 object key is that prefixed with `RMU_MEDIA_S3_BASE_FOLDER`. Persisted `storageKey` excludes the base folder.
 - `RMU_MEDIA_S3_BASE_FOLDER` is the root of rmu-mfe-assets, so the image `url` is the `storageKey` itself, a path relative to the assets root (`images/<category>/<file>`). Entities store that path and the frontends resolve it against `RMU_MFE_ASSETS_URI`; no public host is stored. `RMU_MEDIA_S3_ENDPOINT` + `FORCE_PATH_STYLE` support S3-compatible stores.
 - The storage key is fixed when the file is uploaded: changing the category of an image only changes its metadata, and the object stays under the folder of the old category (a new file is stored under the current category).
-- Import derives an image's category from the parent folder name of the object key: objects of a folder that is not a category (`IMAGE_CATEGORIES`) are not imported and go to the task `errors`. It skips objects already registered (by `storageKey`).
 
 
 ## Imports and style

@@ -24,6 +24,4 @@ export const envSchema = Joi.object({
   RMU_MEDIA_S3_SECRET_ACCESS_KEY: Joi.string().optional(),
   RMU_MEDIA_S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
   RMU_MEDIA_IMAGE_MAX_WIDTH: Joi.number().integer().min(1).default(2048),
-  RMU_MEDIA_IMAGE_IMPORT_PARALLELISM: Joi.number().integer().min(1).default(4),
-  RMU_MEDIA_IMAGE_IMPORT_BATCH_SIZE: Joi.number().integer().min(1).default(50),
 });

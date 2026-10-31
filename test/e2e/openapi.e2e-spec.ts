@@ -42,7 +42,6 @@ describe('OpenAPI', () => {
   it('documents the success status of each operation', () => {
     expect(Object.keys(spec.paths['/v1/images'].post.responses)).toContain('201');
     expect(Object.keys(spec.paths['/v1/images/{id}'].delete.responses)).toContain('204');
-    expect(Object.keys(spec.paths['/v1/images/import'].post.responses)).toContain('202');
   });
 
   it('gives the error examples of this API [F-receta-22]', () => {

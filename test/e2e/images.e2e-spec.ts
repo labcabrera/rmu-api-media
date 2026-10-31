@@ -18,15 +18,6 @@ type ImageBody = {
   owner: string;
 };
 
-type TaskBody = { status: string; importedImageIds: string[]; verifiedImageIds: string[]; skipped: string[]; errors: unknown[] };
-
-const counts = (task: TaskBody) => ({
-  status: task.status,
-  imported: task.importedImageIds.length,
-  verified: task.verifiedImageIds.length,
-  skipped: task.skipped.length,
-});
-
 const picture = (format: 'png' | 'jpeg', width = 200, height = 100) =>
   sharp({ create: { width, height, channels: 3, background: { r: 200, g: 40, b: 40 } } })
     [format]()
@@ -273,63 +264,6 @@ describe('delete', () => {
   });
 });
 
-describe('import from S3', () => {
-  const waitForTask = async (taskId: string): Promise<TaskBody> => {
-    for (let attempt = 0; attempt < 50; attempt++) {
-      const response = await request(e2e.server).get(`/v1/images/import/${taskId}`).set('Authorization', e2e.auth('admin'));
-      const task = response.body as TaskBody;
-      if (task.status === 'completed' || task.status === 'failed') return task;
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-    throw new Error(`Import task ${taskId} did not finish`);
-  };
-
-  const importFolder = async (folder: string) => {
-    const response = await request(e2e.server).post('/v1/images/import').set('Authorization', e2e.auth('admin')).send({ folder });
-    expect(response.status).toBe(202);
-    return waitForTask((response.body as { taskId: string }).taskId);
-  };
-
-  it('registers the images of a folder once, taking the category from the parent folder', async () => {
-    const png = await picture('png');
-    e2e.bucket.set(`${BASE_FOLDER}/images/backgrounds/forest.png`, { body: png, contentType: 'image/png' });
-    e2e.bucket.set(`${BASE_FOLDER}/images/backgrounds/notes.txt`, { body: Buffer.from('x'), contentType: 'text/plain' });
-
-    const first = await importFolder('images/backgrounds');
-    expect(counts(first)).toMatchObject({ status: 'completed', imported: 1, skipped: 1, verified: 0 });
-
-    const list = await request(e2e.server).get('/v1/images').query({ q: 'category==backgrounds' }).set('Authorization', e2e.auth('admin'));
-    const images = (list.body as { content: ImageBody[] }).content;
-    expect(images).toHaveLength(1);
-    expect(images[0]).toMatchObject({ storageKey: 'images/backgrounds/forest.png', verified: true, owner: 'e2e-admin' });
-
-    const second = await importFolder('images/backgrounds');
-    expect(counts(second)).toMatchObject({ status: 'completed', imported: 0, verified: 1 });
-  });
-
-  it('does not import the objects of a folder that is not a category and counts them as errors [F-media-09]', async () => {
-    e2e.bucket.set(`${BASE_FOLDER}/images/unknown-folder/a.png`, { body: await picture('png'), contentType: 'image/png' });
-    const task = await importFolder('images/unknown-folder');
-    expect(counts(task)).toMatchObject({ status: 'failed', imported: 0, verified: 0 });
-    expect(task.errors).toEqual([{ storageKey: 'images/unknown-folder/a.png', message: 'Folder unknown-folder is not an image category' }]);
-    const list = await request(e2e.server)
-      .get('/v1/images')
-      .query({ q: 'category==unknown-folder' })
-      .set('Authorization', e2e.auth('admin'));
-    expect(ids(list.body)).toHaveLength(0);
-  });
-
-  it('answers 404 to an unknown task', async () => {
-    const response = await request(e2e.server).get('/v1/images/import/unknown').set('Authorization', e2e.auth('admin'));
-    expect(response.status).toBe(404);
-  });
-
-  it('rejects an import from a user that is not admin [F-media-06]', async () => {
-    const response = await request(e2e.server).post('/v1/images/import').set('Authorization', e2e.auth('owner')).send({ folder: 'images' });
-    expect(response.status).toBe(403);
-  });
-});
-
 describe('permissions [F-media-06]', () => {
   type Caller = 'owner' | 'other' | 'admin' | 'noRole' | 'none';
   const as = (test: request.Test, caller: Caller) => (caller === 'none' ? test : test.set('Authorization', e2e.auth(caller)));
@@ -377,30 +311,5 @@ describe('permissions [F-media-06]', () => {
         .set('Authorization', e2e.auth('admin'));
       expect(ids(still.body)).toEqual([id]);
     }
-  });
-
-  it.each<[Caller, number]>([
-    ['owner', 403],
-    ['admin', 202],
-    ['noRole', 403],
-    ['none', 401],
-  ])('import as %s answers %i', async (caller, status) => {
-    const response = await as(request(e2e.server).post('/v1/images/import'), caller).send({ folder: 'images/empty' });
-    expect(response.status).toBe(status);
-  });
-
-  it.each<[Caller, number]>([
-    ['owner', 403],
-    ['admin', 200],
-    ['noRole', 403],
-    ['none', 401],
-  ])('reading an import task of admin as %s answers %i', async (caller, status) => {
-    const started = await request(e2e.server)
-      .post('/v1/images/import')
-      .set('Authorization', e2e.auth('admin'))
-      .send({ folder: 'images/empty' });
-    const taskId = (started.body as { taskId: string }).taskId;
-    const response = await as(request(e2e.server).get(`/v1/images/import/${taskId}`), caller);
-    expect(response.status).toBe(status);
   });
 });

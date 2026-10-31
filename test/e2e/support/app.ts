@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -37,7 +37,7 @@ export type E2eApp = {
   stop: () => Promise<void>;
 };
 
-/** Answers the four S3 commands the storage adapter sends from an in-memory bucket. */
+/** Answers the two S3 commands the storage adapter sends from an in-memory bucket. */
 function fakeS3(bucket: Bucket) {
   const send = (command: unknown): Promise<unknown> => {
     if (command instanceof PutObjectCommand) {
@@ -48,17 +48,6 @@ function fakeS3(bucket: Bucket) {
     if (command instanceof DeleteObjectCommand) {
       bucket.delete(command.input.Key!);
       return Promise.resolve({});
-    }
-    if (command instanceof ListObjectsV2Command) {
-      const prefix = command.input.Prefix ?? '';
-      const contents = [...bucket.entries()]
-        .filter(([key]) => key.startsWith(prefix))
-        .map(([key, object]) => ({ Key: key, Size: object.body.length }));
-      return Promise.resolve({ Contents: contents });
-    }
-    if (command instanceof HeadObjectCommand) {
-      const object = bucket.get(command.input.Key!);
-      return Promise.resolve({ ContentType: object?.contentType, ContentLength: object?.body.length });
     }
     return Promise.reject(new Error(`Unexpected S3 command ${(command as object).constructor.name}`));
   };

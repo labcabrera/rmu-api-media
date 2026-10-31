@@ -15,16 +15,7 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiBody,
-  ApiAcceptedResponse,
-  ApiConsumes,
-  ApiCreatedResponse,
-  ApiNoContentResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../shared/infrastructure/security/jwt-auth.guard.js';
 import { ApiErrors } from '../../../shared/interfaces/http/api-errors.decorator.js';
 import type { AuthenticatedUser } from '../../../shared/interfaces/http/authenticated-request.js';
@@ -37,18 +28,9 @@ import { Image } from '../../domain/aggregates/image.js';
 import { Page } from '../../../shared/application/pagination/page.js';
 import { PagedQueryDto } from '../../../shared/interfaces/http/dto/paged-rsql-query.js';
 import { ImageDto, ImagePageDto } from './dto/image.dto.js';
-import {
-  ImageImportTaskDto,
-  ImportImagesFromS3FolderDto,
-  ImportImagesResultDto as ImportImagesResultDto,
-} from './dto/import-images-folder.dto.js';
 import { UpdateImageDto } from './dto/update-image.dto.js';
 import type { UploadedImageFile } from './dto/uploaded-image-file.js';
 import { UploadImageDto } from './dto/upload-image.dto.js';
-import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command.js';
-import type { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler.js';
-import { GetImageImportTaskQuery } from '../../application/cqrs/queries/get-image-import-task.query.js';
-import { ImageImportTask } from '../../domain/aggregates/image-import-task.js';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/images')
@@ -88,28 +70,6 @@ export class ImageController {
     const command = UploadImageDto.toCommand(dto, file, user.id, user.roles);
     const image = await this.commandBus.execute<UploadImageCommand, Image>(command);
     return ImageDto.fromEntity(image);
-  }
-
-  @Post('import')
-  @ApiBody({ type: ImportImagesFromS3FolderDto })
-  @ApiOperation({ operationId: 'importImages', summary: 'Import images' })
-  @ApiAcceptedResponse({ type: ImportImagesResultDto, description: 'Import task accepted' })
-  @ApiErrors({ 400: 'Bad request, invalid data', 403: 'Only an administrator can import images' })
-  @HttpCode(202)
-  async importFromS3Folder(@Body() dto: ImportImagesFromS3FolderDto, @CurrentUser() user: AuthenticatedUser) {
-    const command = ImportImagesFromS3FolderDto.toCommand(dto, user.id, user.roles);
-    const result = await this.commandBus.execute<ImportImagesCommand, ImportImagesResult>(command);
-    return ImportImagesResultDto.fromResult(result);
-  }
-
-  @Get('import/:taskId')
-  @ApiOperation({ operationId: 'getImageImportTask', summary: 'Get image import task result' })
-  @ApiOkResponse({ type: ImageImportTaskDto, description: 'Success' })
-  @ApiErrors({ 404: 'Image import task not found', 403: 'The task was started by another user' })
-  async getImportTask(@Param('taskId') taskId: string, @CurrentUser() user: AuthenticatedUser) {
-    const query = new GetImageImportTaskQuery(taskId, user.id, user.roles);
-    const task = await this.queryBus.execute<GetImageImportTaskQuery, ImageImportTask>(query);
-    return ImageImportTaskDto.fromEntity(task);
   }
 
   @Patch(':id')
