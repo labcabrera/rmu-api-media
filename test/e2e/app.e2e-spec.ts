@@ -18,6 +18,7 @@ describe('rmu-api-media (e2e)', () => {
       RMU_IAM_AUDIENCE: 'rmu-api',
       RMU_MEDIA_S3_REGION: 'eu-west-1',
       RMU_MEDIA_S3_BUCKET: 'rmu-e2e',
+      RMU_MEDIA_BASE_MANIFEST_URI: 'http://localhost:1/images/manifest.json',
     });
     const { AppModule } = await import('../../src/app.module.js');
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();

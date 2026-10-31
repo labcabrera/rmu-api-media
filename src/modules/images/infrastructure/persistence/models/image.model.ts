@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
 import type { ImageCategory } from '../../../domain/entities/image-category.js';
+import { IMAGE_VISIBILITIES, type ImageVisibility } from '../../../domain/entities/image-visibility.js';
 
 export type ImageDocument = HydratedDocument<ImageModel>;
 
@@ -45,6 +46,10 @@ export class ImageModel {
 
   @Prop({ required: true, default: false, index: true })
   verified: boolean;
+
+  /** Documents stored before spec 057 have none: they are public. */
+  @Prop({ type: String, enum: IMAGE_VISIBILITIES, default: 'public' })
+  visibility: ImageVisibility;
 
   @Prop({ required: true, index: true })
   owner: string;

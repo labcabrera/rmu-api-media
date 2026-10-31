@@ -1,5 +1,4 @@
 import type { Image } from '../../domain/aggregates/image.js';
-import type { ImageImportTask } from '../../domain/aggregates/image-import-task.js';
 
 export const IMAGE_GUARD = Symbol('ImageGuardPort');
 
@@ -14,8 +13,4 @@ export interface ImageGuardPort {
   checkUpdate(image: Image, userId: string, roles: string[]): void;
   /** Delete: the owner or rmu-admin. */
   checkDelete(image: Image, userId: string, roles: string[]): void;
-  /** Import a whole S3 folder: rmu-admin only. */
-  checkImport(roles: string[]): void;
-  /** Read an import task: the user that started it or rmu-admin. */
-  checkReadTask(task: ImageImportTask, userId: string, roles: string[]): void;
 }

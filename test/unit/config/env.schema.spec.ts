@@ -7,6 +7,7 @@ const required = {
   RMU_IAM_AUDIENCE: 'rmu-api',
   RMU_MEDIA_S3_REGION: 'eu-west-1',
   RMU_MEDIA_S3_BUCKET: 'rmu-e2e',
+  RMU_MEDIA_BASE_MANIFEST_URI: 'http://rmu-mfe-assets/images/manifest.json',
 };
 
 describe('envSchema', () => {
@@ -16,11 +17,25 @@ describe('envSchema', () => {
     expect(Object.keys(result.value as object).some(key => key.startsWith('RMU_KAFKA_'))).toBe(false);
   });
 
-  it('validates the image folder and defaults it to the base folder itself [F-media-11]', () => {
-    expect((envSchema.validate(required).value as { RMU_MEDIA_S3_IMAGE_FOLDER: string }).RMU_MEDIA_S3_IMAGE_FOLDER).toBe('');
-    const result = envSchema.validate({ ...required, RMU_MEDIA_S3_IMAGE_FOLDER: 'images' });
-    expect(result.error).toBeUndefined();
-    expect((result.value as { RMU_MEDIA_S3_IMAGE_FOLDER: string }).RMU_MEDIA_S3_IMAGE_FOLDER).toBe('images');
-    expect(envSchema.validate({ ...required, RMU_MEDIA_S3_IMAGE_FOLDER: 42 }).error).toBeDefined();
+  it('defaults the uploads prefix, the upload limit and the manifest TTL (spec 057)', () => {
+    expect(envSchema.validate(required).value).toMatchObject({
+      RMU_MEDIA_S3_UPLOADS_PREFIX: 'uploads',
+      RMU_MEDIA_UPLOAD_MAX_BYTES: 10_485_760,
+      RMU_MEDIA_BASE_MANIFEST_TTL_MS: 60_000,
+    });
+  });
+
+  it('requires the manifest of the base images', () => {
+    expect(envSchema.validate({ ...required, RMU_MEDIA_BASE_MANIFEST_URI: undefined }).error?.message).toContain(
+      'RMU_MEDIA_BASE_MANIFEST_URI',
+    );
+  });
+
+  it.each(['/uploads', 'uploads/', 'up loads', ''])('rejects the uploads prefix %j', prefix => {
+    expect(envSchema.validate({ ...required, RMU_MEDIA_S3_UPLOADS_PREFIX: prefix }).error).toBeDefined();
+  });
+
+  it('accepts a nested uploads prefix', () => {
+    expect(envSchema.validate({ ...required, RMU_MEDIA_S3_UPLOADS_PREFIX: 'media/uploads' }).error).toBeUndefined();
   });
 });

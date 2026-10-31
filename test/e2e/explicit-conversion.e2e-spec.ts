@@ -29,13 +29,6 @@ describe('Explicit conversion (e2e)', () => {
   };
 
   describe('body', () => {
-    it('answers 400 to a number in a string field of a JSON body', async () => {
-      const auth = e2e.auth('admin');
-      const folder = await request(e2e.server).post('/v1/images/import').set('Authorization', auth).send({ folder: 42 }).expect(400);
-      expect(folder.body).toMatchObject({ statusCode: 400, path: '/v1/images/import' });
-      await request(e2e.server).post('/v1/images/import').set('Authorization', auth).send({ folder: 'images', metadata: 42 }).expect(400);
-    });
-
     it('answers 400 to a number in a string field of a JSON update', async () => {
       const image = await upload();
       await request(e2e.server).patch(`/v1/images/${image.id}`).set('Authorization', e2e.auth('owner')).send({ altText: 42 }).expect(400);

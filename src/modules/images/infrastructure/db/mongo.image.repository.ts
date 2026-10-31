@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import type { ImageRepository } from '../../application/ports/image-repository.port.js';
+import type { ImageRepository, ImageSlice } from '../../application/ports/image-repository.port.js';
 import { Image } from '../../domain/aggregates/image.js';
-import type { ImageCategory } from '../../domain/entities/image-category.js';
-import { Page } from '../../../shared/application/pagination/page.js';
+import { DEFAULT_IMAGE_VISIBILITY } from '../../domain/entities/image-visibility.js';
 import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository.js';
+import { bindSelectors } from '../../../shared/infrastructure/db/rsql-matcher.js';
 import { RsqlParser } from '../../../shared/infrastructure/db/rsql-parser.js';
 import { type ImageDocument, ImageModel } from '../persistence/models/image.model.js';
 
@@ -15,23 +15,17 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageModel>
     super(imageModel, rsqlParser);
   }
 
-  async findByCategory(category: ImageCategory, page: number, size: number): Promise<Page<Image>> {
-    const skip = page * size;
+  async findSlice(rsql: string | undefined, skip: number, limit: number): Promise<ImageSlice> {
+    const node = this.rsqlParser.parseExpression(rsql);
+    // Every stored image is a user image: `source` is decided here and never reaches Mongo.
+    const bound = node ? bindSelectors(node, { source: 'user' }) : true;
+    if (bound === false) return { content: [], totalElements: 0 };
+    const filter = bound === true ? {} : this.rsqlParser.toMongo(bound);
     const [docs, totalElements] = await Promise.all([
-      this.model.find({ category }).skip(skip).limit(size).sort({ createdAt: -1 }),
-      this.model.countDocuments({ category }),
+      limit > 0 ? this.model.find(filter).sort({ _id: 1 }).skip(skip).limit(limit) : Promise.resolve([]),
+      this.model.countDocuments(filter),
     ]);
-    return new Page<Image>(
-      docs.map(doc => this.toEntity(doc)),
-      page,
-      size,
-      totalElements,
-    );
-  }
-
-  async findByStorageKey(storageKey: string): Promise<Image | null> {
-    const doc = await this.model.findOne({ storageKey });
-    return doc ? this.toEntity(doc) : null;
+    return { content: docs.map(doc => this.toEntity(doc)), totalElements };
   }
 
   protected mapToEntity(doc: ImageDocument): Image {
@@ -48,6 +42,7 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageModel>
       altText: doc.altText,
       metadata: doc.metadata,
       verified: doc.verified ?? false,
+      visibility: doc.visibility ?? DEFAULT_IMAGE_VISIBILITY,
       owner: doc.owner,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,

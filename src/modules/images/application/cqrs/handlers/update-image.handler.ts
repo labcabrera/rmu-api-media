@@ -6,6 +6,8 @@ import { IMAGE_GUARD, type ImageGuardPort } from '../../ports/image-guard.port.j
 import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
 import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
 import { NotFoundError } from '../../../../shared/domain/errors/errors.js';
+import { isBaseImageId } from '../../../domain/entities/base-image.js';
+import { BaseImageReadOnlyError } from '../../../domain/errors/base-image-read-only.error.js';
 
 @CommandHandler(UpdateImageCommand)
 export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, Image> {
@@ -20,6 +22,7 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
   async execute(command: UpdateImageCommand): Promise<Image> {
     this.logger.log(`Updating image ${command.id} for user ${command.userId}`);
 
+    if (isBaseImageId(command.id)) throw new BaseImageReadOnlyError(command.id);
     const image = await this.imageRepository.findById(command.id);
     if (!image) throw new NotFoundError('Image', command.id);
     this.imageGuard.checkUpdate(image, command.userId, command.roles);
@@ -29,6 +32,7 @@ export class UpdateImageHandler implements ICommandHandler<UpdateImageCommand, I
       category: command.category,
       altText: command.altText,
       metadata: command.metadata,
+      visibility: command.visibility,
     });
 
     if (command.content && command.contentType) {
