@@ -42,7 +42,7 @@ make check             # lint, typecheck, unit and e2e tests
 | `pnpm build` / `pnpm typecheck` | SWC build to `dist/` / `tsc --noEmit`
 | `pnpm lint` / `pnpm format` | typed ESLint + Prettier / Prettier over `src` and `test`
 | `pnpm test` | unit tests (`test/unit`)
-| `pnpm test:e2e` | one file per resource booting `AppModule` against mongodb-memory-server, with tokens signed against a local JWKS; S3 answers from an in-memory bucket (`test/e2e/support`)
+| `pnpm test:e2e` | one file per resource booting `AppModule` against mongodb-memory-server, with tokens signed against a local JWKS; S3 answers from an in-memory bucket and the base image manifest from a local server (`test/e2e/support`)
 | `pnpm test:cov` | unit and e2e tests with the coverage thresholds of `vitest.config.ts` (what CI runs)
 | `make docker-build` / `make docker-run` | image `labcabrera/rmu-api-media:latest` (`node:24-bookworm-slim`, `node` user, `HEALTHCHECK`); `docker-run` needs `.env.docker`
 | `make create-release` | semantic-release from a clean `develop` into `master`
@@ -52,6 +52,23 @@ The Joi schema in `src/config/env.schema.ts` fails startup on a missing required
 `LOG_LEVEL` (`info`) and `RMU_MONGO_MEDIA_URI`, the HTTP layer reads `RMU_CORS_ORIGINS` (empty: no CORS, browsers come through the
 gateway), `RMU_THROTTLE_LIMIT` / `RMU_THROTTLE_TTL_MS` (`300` per `60000` ms and client IP, `0` turns it off) and
 `RMU_TRUST_PROXY` (`loopback, linklocal, uniquelocal`).
+
+Images (spec 057) come from two sources, both in `GET /v1/images` with `source: 'base' | 'user'`:
+
+* *base images*: the files of rmu-mfe-assets, read from its manifest at `RMU_MEDIA_BASE_MANIFEST_URI` (required, for
+  example `http://rmu-mfe-assets/images/manifest.json`), cached and revalidated with its ETag at most once per
+  `RMU_MEDIA_BASE_MANIFEST_TTL_MS` (`60000`). They are read-only (403 `base-image-read-only`) and their id is
+  `base:<path>`.
+* *user images*: uploads (PNG, JPEG or WebP, at most `RMU_MEDIA_UPLOAD_MAX_BYTES`, `10485760`: a larger one is a 413
+  `payload-too-large`), stored in S3 (`RMU_MEDIA_S3_BUCKET`, `RMU_MEDIA_S3_REGION`, optional `RMU_MEDIA_S3_ENDPOINT`,
+  `RMU_MEDIA_S3_FORCE_PATH_STYLE` and credentials) at `<RMU_MEDIA_S3_UPLOADS_PREFIX>/<category>/<id>.<png|jpg>`
+  (prefix `uploads`), which is also their `url`.
+
+The listing gives the base images first, sorted by path, then the user images sorted by id; a page may span both and
+`totalElements` counts both. The RSQL `q` filters both, also on `source` (`q=source==user;category==avatars`).
+
+`scripts/move-uploads.mjs` moves the uploads stored before spec 057 (under the assets prefix) to the uploads prefix;
+see its header for the usage.
 
 Errors answer `{ statusCode, error, code, message, timestamp, path }`. Responses carry the `version` of the entity and a
 `PATCH` may send it back: a stale one is a 409 `version-conflict`. `size` goes up to 100.
