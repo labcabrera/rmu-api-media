@@ -6,6 +6,7 @@ import { IMAGE_CATEGORIES } from '../../../domain/entities/image-category.js';
 import type { ImageCategory } from '../../../domain/entities/image-category.js';
 import { parseMetadata } from './upload-image.dto.js';
 import type { UploadedImageFile } from './uploaded-image-file.js';
+import { IMAGE_VISIBILITIES, SUPPORTED_IMAGE_VISIBILITIES, type ImageVisibility } from '../../../domain/entities/image-visibility.js';
 
 export class UpdateImageDto {
   @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Image file' })
@@ -34,6 +35,16 @@ export class UpdateImageDto {
   @IsOptional()
   version?: number;
 
+  @ApiPropertyOptional({
+    type: String,
+    enum: IMAGE_VISIBILITIES,
+    default: 'public',
+    description: 'Who sees the image. Only `public` is accepted for now: `friends` and `private` are reserved (spec 057)',
+  })
+  @IsIn(SUPPORTED_IMAGE_VISIBILITIES, { message: 'visibility must be public: friends and private are not supported yet' })
+  @IsOptional()
+  visibility?: ImageVisibility;
+
   static toCommand(id: string, dto: UpdateImageDto, file: UploadedImageFile | undefined, userId: string, userRoles: string[]) {
     return new UpdateImageCommand(
       id,
@@ -46,6 +57,7 @@ export class UpdateImageDto {
       userId,
       userRoles,
       dto.version,
+      dto.visibility,
     );
   }
 }

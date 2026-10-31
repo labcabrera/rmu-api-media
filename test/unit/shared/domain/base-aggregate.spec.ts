@@ -10,6 +10,7 @@ const props = (): ImageProps => ({
   sizeBytes: 10,
   altText: 'Alt',
   verified: false,
+  visibility: 'public',
   owner: 'owner',
   createdAt: new Date('2026-01-01T00:00:00Z'),
 });

@@ -3,31 +3,40 @@ import { parse } from '@rsql/parser';
 import { InvalidSearchExpression } from '../../domain/errors/errors.js';
 
 type MongoQuery = Record<string, unknown>;
-type MongoValue = string | number | null;
+export type RsqlValue = string | number | null;
 
 // @rsql/ast is only a transitive dependency, so its node types are derived from parse().
-type ExpressionNode = ReturnType<typeof parse>;
-type ComparisonNode = Extract<ExpressionNode, { type: 'COMPARISON' }>;
+export type ExpressionNode = ReturnType<typeof parse>;
+export type ComparisonNode = Extract<ExpressionNode, { type: 'COMPARISON' }>;
 
 /** Plain field paths only: no `$` operators, so a selector cannot inject a Mongo operator. */
 const SELECTOR_PATTERN = /^[A-Za-z_][A-Za-z0-9_.]*$/;
-const MAX_REGEX_LENGTH = 100;
+export const MAX_REGEX_LENGTH = 100;
 
 @Injectable()
 export class RsqlParser {
   private readonly logger = new Logger(RsqlParser.name);
 
   public parse(rsql: string | undefined): MongoQuery {
-    if (!rsql || rsql.trim() === '') {
-      return {};
-    }
-    this.logger.verbose(`Converting RSQL to MongoDB query: ${rsql}`);
+    const node = this.parseExpression(rsql);
+    return node ? this.toMongo(node) : {};
+  }
+
+  /** The syntax tree of an expression, undefined for an empty one; an invalid one is an InvalidSearchExpression. */
+  public parseExpression(rsql: string | undefined): ExpressionNode | undefined {
+    if (!rsql || rsql.trim() === '') return undefined;
     let node: ExpressionNode;
     try {
       node = parse(rsql);
     } catch (error) {
       throw new InvalidSearchExpression(`Invalid RSQL query: ${rsql}. ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+    checkSelectors(node);
+    return node;
+  }
+
+  /** The Mongo filter of a syntax tree from parseExpression. */
+  public toMongo(node: ExpressionNode): MongoQuery {
     const result = this.processNode(node);
     this.logger.verbose(`Converted MongoDB query: ${JSON.stringify(result)}`);
     return result;
@@ -47,9 +56,6 @@ export class RsqlParser {
 
   private processComparison(node: ComparisonNode): MongoQuery {
     let field = node.left.selector;
-    if (!SELECTOR_PATTERN.test(field) || field.split('.').some(part => part === '')) {
-      throw new InvalidSearchExpression(`Invalid field selector: ${field}`);
-    }
     if (field === 'id') field = '_id';
     const raw = node.right.value;
     const value = coerce(Array.isArray(raw) ? raw[0] : raw);
@@ -76,9 +82,7 @@ export class RsqlParser {
       case '=re=': {
         if (value === null) throw new InvalidSearchExpression('Regex operator cannot be applied to null');
         const text = String(value);
-        if (text.length > MAX_REGEX_LENGTH) {
-          throw new InvalidSearchExpression(`Regex value longer than ${MAX_REGEX_LENGTH} characters`);
-        }
+        checkRegexLength(text);
         // Case-insensitive substring match: the value is text, not a pattern.
         return { [field]: { $regex: escapeRegex(text), $options: 'i' } };
       }
@@ -88,10 +92,27 @@ export class RsqlParser {
   }
 }
 
-const toArray = (raw: string | string[]): string[] => (Array.isArray(raw) ? raw : [raw]);
+export const toArray = (raw: string | string[]): string[] => (Array.isArray(raw) ? raw : [raw]);
+
+/** Every selector of the tree is a plain field path. */
+function checkSelectors(node: ExpressionNode): void {
+  if (node.type !== 'COMPARISON') {
+    checkSelectors(node.left);
+    checkSelectors(node.right);
+    return;
+  }
+  const field = node.left.selector;
+  if (!SELECTOR_PATTERN.test(field) || field.split('.').some(part => part === '')) {
+    throw new InvalidSearchExpression(`Invalid field selector: ${field}`);
+  }
+}
+
+export function checkRegexLength(text: string): void {
+  if (text.length > MAX_REGEX_LENGTH) throw new InvalidSearchExpression(`Regex value longer than ${MAX_REGEX_LENGTH} characters`);
+}
 
 /** `null` (any case) becomes null and numeric strings become numbers; anything else stays a string. */
-function coerce(raw: string | undefined): MongoValue {
+export function coerce(raw: string | undefined): RsqlValue {
   if (raw === undefined) throw new InvalidSearchExpression('Missing comparison value');
   if (raw.trim().toLowerCase() === 'null') return null;
   if (raw.trim() !== '') {

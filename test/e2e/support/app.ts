@@ -8,6 +8,7 @@ import request from 'supertest';
 import { configureHttp } from '../../../src/bootstrap/http.js';
 import { configureOpenApi } from '../../../src/bootstrap/openapi.js';
 import { AUDIENCE, ISSUER, LocalJwks } from './jwks.js';
+import { LocalManifest } from './manifest.js';
 
 export type Server = Parameters<typeof request>[0];
 
@@ -22,7 +23,8 @@ export const USERS = {
 export type UserName = keyof typeof USERS;
 
 export const BUCKET = 'rmu-e2e';
-export const BASE_FOLDER = 'assets';
+export const UPLOADS_PREFIX = 'uploads';
+export const UPLOAD_MAX_BYTES = 200_000;
 
 /** The S3 bucket of the suite: object key -> body and content type. */
 export type Bucket = Map<string, { body: Buffer; contentType?: string }>;
@@ -31,6 +33,8 @@ export type E2eApp = {
   app: NestExpressApplication;
   server: Server;
   jwks: LocalJwks;
+  /** The rmu-mfe-assets manifest the API reads its base images from. */
+  manifest: LocalManifest;
   bucket: Bucket;
   auth: (user: UserName) => string;
   connection: Connection;
@@ -57,7 +61,8 @@ function fakeS3(bucket: Bucket) {
 
 /**
  * Boots the whole AppModule as main.ts does (configureHttp, configureOpenApi) against an in-memory Mongo and a local JWKS.
- * The S3 client answers from an in-memory bucket, so uploads still go through sharp.
+ * The S3 client answers from an in-memory bucket, so uploads still go through sharp, and the base images come from a
+ * local manifest server read again on every request (TTL 0).
  * AppModule is imported after setting the environment, because ConfigModule.forRoot() reads it when the module is
  * evaluated.
  */
@@ -65,6 +70,8 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
   const mongo = await MongoMemoryServer.create();
   const jwks = new LocalJwks();
   await jwks.start();
+  const manifest = new LocalManifest();
+  await manifest.start();
   Object.assign(process.env, {
     RMU_MONGO_MEDIA_URI: mongo.getUri('rmu-media-e2e'),
     RMU_IAM_JWK_URI: jwks.uri,
@@ -72,8 +79,10 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
     RMU_IAM_AUDIENCE: AUDIENCE,
     RMU_MEDIA_S3_REGION: 'eu-west-1',
     RMU_MEDIA_S3_BUCKET: BUCKET,
-    RMU_MEDIA_S3_BASE_FOLDER: BASE_FOLDER,
-    RMU_MEDIA_S3_IMAGE_FOLDER: 'images',
+    RMU_MEDIA_S3_UPLOADS_PREFIX: UPLOADS_PREFIX,
+    RMU_MEDIA_UPLOAD_MAX_BYTES: String(UPLOAD_MAX_BYTES),
+    RMU_MEDIA_BASE_MANIFEST_URI: manifest.uri,
+    RMU_MEDIA_BASE_MANIFEST_TTL_MS: '0',
     RMU_MEDIA_IMAGE_MAX_WIDTH: '64',
     RMU_THROTTLE_LIMIT: '0',
     RMU_CORS_ORIGINS: '',
@@ -93,12 +102,14 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
     app,
     server: app.getHttpServer() as Server,
     jwks,
+    manifest,
     bucket,
     auth: user => `Bearer ${jwks.token(USERS[user])}`,
     connection: app.get<Connection>(getConnectionToken()),
     stop: async () => {
       await app.close();
       await jwks.stop();
+      await manifest.stop();
       await mongo.stop();
       s3.mockRestore();
     },

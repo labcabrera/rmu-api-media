@@ -31,6 +31,7 @@ export class UploadImageHandler implements ICommandHandler<UploadImageCommand, I
       altText: command.altText,
       metadata: command.metadata,
       verified: false,
+      visibility: command.visibility,
       owner: command.userId,
     });
 

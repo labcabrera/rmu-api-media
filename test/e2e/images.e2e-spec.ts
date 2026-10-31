@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import request from 'supertest';
-import { BASE_FOLDER, ids, startApp, type E2eApp } from './support/app.js';
+import { ids, startApp, UPLOAD_MAX_BYTES, type E2eApp } from './support/app.js';
 
 type ImageBody = {
   id: string;
@@ -15,7 +15,9 @@ type ImageBody = {
   altText?: string;
   metadata?: Record<string, string>;
   verified: boolean;
-  owner: string;
+  owner: string | null;
+  source: string;
+  visibility: string;
 };
 
 const picture = (format: 'png' | 'jpeg', width = 200, height = 100) =>
@@ -78,10 +80,12 @@ describe('upload', () => {
       originalFilename: 'e2e.png',
       verified: false,
       owner: 'e2e-owner',
+      source: 'user',
+      visibility: 'public',
     });
-    expect(image.storageKey).toBe(`images/avatars/${image.id}.png`);
+    expect(image.storageKey).toBe(`uploads/avatars/${image.id}.png`);
     expect(image.url).toBe(image.storageKey);
-    const stored = e2e.bucket.get(`${BASE_FOLDER}/${image.storageKey}`);
+    const stored = e2e.bucket.get(image.storageKey);
     expect(stored?.contentType).toBe('image/png');
     expect(stored?.body.length).toBe(image.sizeBytes);
   });
@@ -91,7 +95,7 @@ describe('upload', () => {
     expect(response.status).toBe(201);
     const image = response.body as ImageBody;
     expect(image.contentType).toBe('image/jpeg');
-    expect(image.storageKey).toBe(`images/items/${image.id}.jpg`);
+    expect(image.storageKey).toBe(`uploads/items/${image.id}.jpg`);
   });
 
   it('requires a file', async () => {
@@ -106,6 +110,61 @@ describe('upload', () => {
       .field('category', 'avatars')
       .attach('file', Buffer.from('plain text'), { filename: 'e2e.txt', contentType: 'text/plain' });
     expect(response.status).toBe(400);
+  });
+
+  it('answers 413 to a file larger than RMU_MEDIA_UPLOAD_MAX_BYTES, in the common error format', async () => {
+    const response = await request(e2e.server)
+      .post('/v1/images')
+      .set('Authorization', e2e.auth('owner'))
+      .field('category', 'avatars')
+      .attach('file', Buffer.alloc(UPLOAD_MAX_BYTES + 1, 1), { filename: 'big.png', contentType: 'image/png' });
+    expect(response.status).toBe(413);
+    expect(response.body).toMatchObject({ statusCode: 413, code: 'payload-too-large', path: '/v1/images' });
+  });
+
+  it('answers 400 to a file that claims to be an image but is not one', async () => {
+    const response = await request(e2e.server)
+      .post('/v1/images')
+      .set('Authorization', e2e.auth('owner'))
+      .field('category', 'avatars')
+      .attach('file', Buffer.from('not a png'), { filename: 'fake.png', contentType: 'image/png' });
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ code: 'validation' });
+    expect([...e2e.bucket.keys()].some(key => key.includes('fake'))).toBe(false);
+  });
+
+  it('accepts a WebP upload and stores it as JPEG', async () => {
+    const webp = await sharp({ create: { width: 10, height: 10, channels: 3, background: { r: 0, g: 0, b: 0 } } })
+      .webp()
+      .toBuffer();
+    const response = await request(e2e.server)
+      .post('/v1/images')
+      .set('Authorization', e2e.auth('owner'))
+      .field('category', 'avatars')
+      .attach('file', webp, { filename: 'e2e.webp', contentType: 'image/webp' });
+    expect(response.status).toBe(201);
+    expect((response.body as ImageBody).storageKey).toMatch(/^uploads\/avatars\/.+\.jpg$/);
+  });
+
+  it.each(['friends', 'private', 'unknown'])('rejects the visibility %s, reserved or unknown', async visibility => {
+    const response = await request(e2e.server)
+      .post('/v1/images')
+      .set('Authorization', e2e.auth('owner'))
+      .field('category', 'avatars')
+      .field('visibility', visibility)
+      .attach('file', await picture('png'), { filename: 'e2e.png', contentType: 'image/png' });
+    expect(response.status).toBe(400);
+  });
+
+  it('accepts the public visibility', async () => {
+    const response = await request(e2e.server)
+      .post('/v1/images')
+      .set('Authorization', e2e.auth('owner'))
+      .field('category', 'avatars')
+      .field('visibility', 'public')
+      .attach('file', await picture('png'), { filename: 'e2e.png', contentType: 'image/png' });
+    expect(response.status).toBe(201);
+    expect((response.body as ImageBody).visibility).toBe('public');
   });
 
   it('rejects an unknown category', async () => {
@@ -176,9 +235,9 @@ describe('update', () => {
     expect(response.status).toBe(200);
     const updated = response.body as ImageBody;
     expect(updated).toMatchObject({ contentType: 'image/jpeg', width: 64, height: 64, originalFilename: 'new.jpg' });
-    expect(updated.storageKey).toBe(`images/avatars/${created.id}.jpg`);
-    expect(e2e.bucket.has(`${BASE_FOLDER}/${created.storageKey}`)).toBe(false);
-    expect(e2e.bucket.has(`${BASE_FOLDER}/${updated.storageKey}`)).toBe(true);
+    expect(updated.storageKey).toBe(`uploads/avatars/${created.id}.jpg`);
+    expect(e2e.bucket.has(created.storageKey)).toBe(false);
+    expect(e2e.bucket.has(updated.storageKey)).toBe(true);
   });
 
   // F-media-07 (descartado): the storage key is fixed when the image is uploaded; a new category only changes the metadata.
@@ -189,6 +248,24 @@ describe('update', () => {
       .set('Authorization', e2e.auth('owner'))
       .field('category', 'npcs');
     expect((response.body as ImageBody).storageKey).toBe(created.storageKey);
+  });
+
+  it('answers 413 to a replacement file larger than the limit', async () => {
+    const created = (await upload('owner')).body as ImageBody;
+    const response = await request(e2e.server)
+      .patch(`/v1/images/${created.id}`)
+      .set('Authorization', e2e.auth('owner'))
+      .attach('file', Buffer.alloc(UPLOAD_MAX_BYTES + 1, 1), { filename: 'big.png', contentType: 'image/png' });
+    expect(response.status).toBe(413);
+  });
+
+  it('rejects a reserved visibility in a change', async () => {
+    const created = (await upload('owner')).body as ImageBody;
+    const response = await request(e2e.server)
+      .patch(`/v1/images/${created.id}`)
+      .set('Authorization', e2e.auth('owner'))
+      .field('visibility', 'private');
+    expect(response.status).toBe(400);
   });
 
   it('answers 404 to an unknown image, in the common error format', async () => {
@@ -252,7 +329,7 @@ describe('delete', () => {
     const created = (await upload('owner')).body as ImageBody;
     const response = await request(e2e.server).delete(`/v1/images/${created.id}`).set('Authorization', e2e.auth('owner'));
     expect(response.status).toBe(204);
-    expect(e2e.bucket.has(`${BASE_FOLDER}/${created.storageKey}`)).toBe(false);
+    expect(e2e.bucket.has(created.storageKey)).toBe(false);
     const again = await request(e2e.server).delete(`/v1/images/${created.id}`).set('Authorization', e2e.auth('owner'));
     expect(again.status).toBe(404);
   });

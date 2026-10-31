@@ -5,6 +5,7 @@ import { UploadImageCommand } from '../../../application/cqrs/commands/upload-im
 import { IMAGE_CATEGORIES } from '../../../domain/entities/image-category.js';
 import type { ImageCategory } from '../../../domain/entities/image-category.js';
 import type { UploadedImageFile } from './uploaded-image-file.js';
+import { IMAGE_VISIBILITIES, SUPPORTED_IMAGE_VISIBILITIES, type ImageVisibility } from '../../../domain/entities/image-visibility.js';
 
 export class UploadImageDto {
   @ApiProperty({ type: 'string', format: 'binary', description: 'Image file' })
@@ -25,6 +26,16 @@ export class UploadImageDto {
   @IsOptional()
   metadata?: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    enum: IMAGE_VISIBILITIES,
+    default: 'public',
+    description: 'Who sees the image. Only `public` is accepted for now: `friends` and `private` are reserved (spec 057)',
+  })
+  @IsIn(SUPPORTED_IMAGE_VISIBILITIES, { message: 'visibility must be public: friends and private are not supported yet' })
+  @IsOptional()
+  visibility?: ImageVisibility;
+
   static toCommand(dto: UploadImageDto, file: UploadedImageFile, userId: string, userRoles: string[]) {
     return new UploadImageCommand(
       dto.category,
@@ -35,6 +46,7 @@ export class UploadImageDto {
       parseMetadata(dto.metadata),
       userId,
       userRoles,
+      dto.visibility,
     );
   }
 }

@@ -11,8 +11,9 @@ let e2e: E2eApp;
 beforeAll(async () => {
   e2e = await startApp();
   await e2e.connection.collection('images').insertMany([
-    { name: 'a', sizeBytes: 100, createdAt: NOW },
-    { name: 'b', sizeBytes: 250, createdAt: monthsAgo(2) },
+    // Distinct storage keys: the unique index on storageKey may already exist when they are inserted.
+    { name: 'a', storageKey: 'uploads/avatars/a.png', sizeBytes: 100, createdAt: NOW },
+    { name: 'b', storageKey: 'uploads/avatars/b.png', sizeBytes: 250, createdAt: monthsAgo(2) },
   ]);
 });
 

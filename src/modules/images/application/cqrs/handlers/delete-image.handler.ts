@@ -5,6 +5,8 @@ import { IMAGE_GUARD, type ImageGuardPort } from '../../ports/image-guard.port.j
 import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
 import { type ImageStoragePort, IMAGE_STORAGE_PORT } from '../../ports/image-storage.port.js';
 import { NotFoundError } from '../../../../shared/domain/errors/errors.js';
+import { isBaseImageId } from '../../../domain/entities/base-image.js';
+import { BaseImageReadOnlyError } from '../../../domain/errors/base-image-read-only.error.js';
 
 @CommandHandler(DeleteImageCommand)
 export class DeleteImageHandler implements ICommandHandler<DeleteImageCommand> {
@@ -19,6 +21,7 @@ export class DeleteImageHandler implements ICommandHandler<DeleteImageCommand> {
   async execute(command: DeleteImageCommand): Promise<void> {
     this.logger.log(`Deleting image ${command.id} for user ${command.userId}`);
 
+    if (isBaseImageId(command.id)) throw new BaseImageReadOnlyError(command.id);
     const image = await this.imageRepository.findById(command.id);
     if (!image) throw new NotFoundError('Image', command.id);
     this.imageGuard.checkDelete(image, command.userId, command.roles);
