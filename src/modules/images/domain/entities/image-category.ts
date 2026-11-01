@@ -11,6 +11,7 @@ export const IMAGE_CATEGORIES = [
   'photos',
   'professions',
   'races',
+  'spells',
   'user-data',
 ] as const;
 
