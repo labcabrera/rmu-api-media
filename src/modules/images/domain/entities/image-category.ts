@@ -2,6 +2,7 @@ export const IMAGE_CATEGORIES = [
   'actions',
   'avatars',
   'backgrounds',
+  'cultures',
   'doc',
   'generic',
   'icons',
