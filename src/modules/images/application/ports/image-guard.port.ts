@@ -13,4 +13,6 @@ export interface ImageGuardPort {
   checkUpdate(image: Image, userId: string, roles: string[]): void;
   /** Delete: the owner or rmu-admin. */
   checkDelete(image: Image, userId: string, roles: string[]): void;
+  /** Delete every image of a scope: rmu-admin only, the service account of the APIs (spec 102). */
+  checkDeleteByScope(roles: string[]): void;
 }

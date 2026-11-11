@@ -19,6 +19,14 @@ export class ImageDto {
   @ApiProperty({ type: String, enum: IMAGE_VISIBILITIES, description: 'Who sees the image; every image is public for now' })
   visibility: ImageVisibility;
 
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'What the image belongs to, `strategic-game:<id>` (spec 102): set at upload, filterable with `q=scope==…`. Base images have none',
+    example: 'strategic-game:0b7c1f9e-0000-4000-8000-000000000000',
+  })
+  scope?: string;
+
   @ApiProperty({ type: String, description: 'Image category (the folder of a base image)', example: 'avatars' })
   category: string;
 
@@ -89,6 +97,7 @@ export class ImageDto {
     dto.id = entity.id;
     dto.source = entity.source;
     dto.visibility = entity.visibility;
+    dto.scope = entity.scope;
     dto.version = entity.version;
     dto.category = entity.category;
     dto.url = entity.url;

@@ -51,6 +51,10 @@ export class ImageModel {
   @Prop({ type: String, enum: IMAGE_VISIBILITIES, default: 'public' })
   visibility: ImageVisibility;
 
+  /** What the image belongs to, `strategic-game:<id>` (spec 102); none for most images. */
+  @Prop({ type: String, required: false, index: true })
+  scope?: string;
+
   @Prop({ required: true, index: true })
   owner: string;
 

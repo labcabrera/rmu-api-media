@@ -25,6 +25,11 @@ describe('envSchema', () => {
     });
   });
 
+  it('defaults the width of the chronicle images to 4096 (spec 102)', () => {
+    expect(envSchema.validate(required).value).toMatchObject({ RMU_MEDIA_IMAGE_MAX_WIDTH: 2048, RMU_MEDIA_CHRONICLE_MAX_WIDTH: 4096 });
+    expect(envSchema.validate({ ...required, RMU_MEDIA_CHRONICLE_MAX_WIDTH: 0 }).error).toBeDefined();
+  });
+
   it('requires the manifest of the base images', () => {
     expect(envSchema.validate({ ...required, RMU_MEDIA_BASE_MANIFEST_URI: undefined }).error?.message).toContain(
       'RMU_MEDIA_BASE_MANIFEST_URI',

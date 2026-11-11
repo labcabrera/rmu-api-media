@@ -36,6 +36,18 @@ export class UploadImageDto {
   @IsOptional()
   visibility?: ImageVisibility;
 
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'What the image belongs to, `<kind>:<id>`; only `strategic-game:<uuid>` for now (spec 102). Sent in the multipart form ' +
+      'next to `category` (the chronicle sends `category=chronicle` and `scope=strategic-game:<id>`). Another value is a 400 ' +
+      '`invalid-image-scope`; an empty one is ignored. It cannot be changed later',
+    example: 'strategic-game:0b7c1f9e-0000-4000-8000-000000000000',
+  })
+  @IsString()
+  @IsOptional()
+  scope?: string;
+
   static toCommand(dto: UploadImageDto, file: UploadedImageFile, userId: string, userRoles: string[]) {
     return new UploadImageCommand(
       dto.category,
@@ -47,6 +59,7 @@ export class UploadImageDto {
       userId,
       userRoles,
       dto.visibility,
+      dto.scope === '' ? undefined : dto.scope,
     );
   }
 }

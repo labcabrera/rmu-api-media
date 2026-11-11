@@ -17,6 +17,7 @@ export class Image extends BaseAggregateRoot<ImageProps> {
   public metadata: Record<string, string> | undefined;
   public verified: boolean;
   public visibility: ImageProps['visibility'];
+  public readonly scope: string | undefined;
   public owner: string;
   public createdAt: Date;
   public updatedAt: Date | undefined;
@@ -35,6 +36,7 @@ export class Image extends BaseAggregateRoot<ImageProps> {
     this.metadata = props.metadata;
     this.verified = props.verified;
     this.visibility = props.visibility;
+    this.scope = props.scope;
     this.owner = props.owner;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -69,6 +71,7 @@ export class Image extends BaseAggregateRoot<ImageProps> {
       owner: this.owner,
       verified: this.verified,
       visibility: this.visibility,
+      scope: this.scope,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

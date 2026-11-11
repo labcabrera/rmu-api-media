@@ -1,6 +1,7 @@
 import { Inject, Logger } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { Image } from '../../../domain/aggregates/image.js';
+import { parseImageScope } from '../../../domain/entities/image-scope.js';
 import { UploadImageCommand } from '../commands/upload-image.command.js';
 import { IMAGE_GUARD, type ImageGuardPort } from '../../ports/image-guard.port.js';
 import { type ImageRepository, IMAGE_REPOSITORY } from '../../ports/image-repository.port.js';
@@ -20,6 +21,7 @@ export class UploadImageHandler implements ICommandHandler<UploadImageCommand, I
     this.logger.log(`Uploading image in category ${command.category} for user ${command.userId}`);
 
     this.imageGuard.checkCreate(command.roles);
+    const scope = command.scope === undefined ? undefined : parseImageScope(command.scope);
 
     const image = Image.create({
       category: command.category,
@@ -32,6 +34,7 @@ export class UploadImageHandler implements ICommandHandler<UploadImageCommand, I
       metadata: command.metadata,
       verified: false,
       visibility: command.visibility,
+      scope,
       owner: command.userId,
     });
 
