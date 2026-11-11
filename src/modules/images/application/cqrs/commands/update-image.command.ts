@@ -1,5 +1,6 @@
-import { AuthenticatedCommand } from 'src/modules/shared/application/cqrs/authenticated-command';
-import type { ImageCategory } from '../../../domain/entities/image-category';
+import { AuthenticatedCommand } from '../../../../shared/application/cqrs/authenticated-command.js';
+import type { ImageCategory } from '../../../domain/entities/image-category.js';
+import type { ImageVisibility } from '../../../domain/entities/image-visibility.js';
 
 export class UpdateImageCommand extends AuthenticatedCommand {
   constructor(
@@ -12,6 +13,9 @@ export class UpdateImageCommand extends AuthenticatedCommand {
     public readonly metadata: Record<string, string> | undefined,
     userId: string,
     roles: string[],
+    /** The version the client read; undefined applies the change to the current one. */
+    public readonly expectedVersion?: number,
+    public readonly visibility?: ImageVisibility,
   ) {
     super(userId, roles);
   }

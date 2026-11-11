@@ -1,0 +1,68 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import type { HydratedDocument } from 'mongoose';
+import type { ImageCategory } from '../../../domain/entities/image-category.js';
+import { IMAGE_VISIBILITIES, type ImageVisibility } from '../../../domain/entities/image-visibility.js';
+
+export type ImageDocument = HydratedDocument<ImageModel>;
+
+@Schema({ collection: 'images', versionKey: false })
+export class ImageModel {
+  @Prop({ required: true })
+  _id: string;
+
+  /** Optimistic concurrency: +1 on each write. Documents stored before it existed have none (version 0). */
+  @Prop({ type: Number, default: 0 })
+  version: number;
+
+  @Prop({ type: String, required: true, index: true })
+  category: ImageCategory;
+
+  @Prop({ required: true, unique: true, index: true })
+  storageKey: string;
+
+  @Prop({ required: true })
+  url: string;
+
+  @Prop({ required: true })
+  contentType: string;
+
+  @Prop({ required: true })
+  sizeBytes: number;
+
+  @Prop({ required: false })
+  width?: number;
+
+  @Prop({ required: false })
+  height?: number;
+
+  @Prop({ required: false })
+  originalFilename?: string;
+
+  @Prop({ required: false })
+  altText?: string;
+
+  @Prop({ type: Object, required: false })
+  metadata?: Record<string, string>;
+
+  @Prop({ required: true, default: false, index: true })
+  verified: boolean;
+
+  /** Documents stored before spec 057 have none: they are public. */
+  @Prop({ type: String, enum: IMAGE_VISIBILITIES, default: 'public' })
+  visibility: ImageVisibility;
+
+  /** What the image belongs to, `strategic-game:<id>` (spec 102); none for most images. */
+  @Prop({ type: String, required: false, index: true })
+  scope?: string;
+
+  @Prop({ required: true, index: true })
+  owner: string;
+
+  @Prop({ required: true })
+  createdAt: Date;
+
+  @Prop({ required: false })
+  updatedAt?: Date;
+}
+
+export const ImageSchema = SchemaFactory.createForClass(ImageModel);

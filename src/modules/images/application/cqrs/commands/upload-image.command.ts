@@ -1,5 +1,6 @@
-import { AuthenticatedCommand } from 'src/modules/shared/application/cqrs/authenticated-command';
-import type { ImageCategory } from '../../../domain/entities/image-category';
+import { AuthenticatedCommand } from '../../../../shared/application/cqrs/authenticated-command.js';
+import type { ImageCategory } from '../../../domain/entities/image-category.js';
+import { DEFAULT_IMAGE_VISIBILITY, type ImageVisibility } from '../../../domain/entities/image-visibility.js';
 
 export class UploadImageCommand extends AuthenticatedCommand {
   constructor(
@@ -11,6 +12,9 @@ export class UploadImageCommand extends AuthenticatedCommand {
     public readonly metadata: Record<string, string> | undefined,
     userId: string,
     roles: string[],
+    public readonly visibility: ImageVisibility = DEFAULT_IMAGE_VISIBILITY,
+    /** `strategic-game:<id>`, validated by the handler; undefined for an image of no scope. */
+    public readonly scope?: string,
   ) {
     super(userId, roles);
   }

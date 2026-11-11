@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   Body,
@@ -11,7 +9,6 @@ import {
   Patch,
   Post,
   Query,
-  Request,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -20,38 +17,34 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
-  ApiAcceptedResponse,
   ApiConsumes,
-  ApiNotFoundResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiResponse,
+  ApiQuery,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/modules/auth/jwt.auth.guard';
-import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command';
-import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command';
-import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command';
-import { ListImagesQuery } from '../../application/cqrs/queries/list-images.query';
-import { Image } from '../../domain/aggregates/image';
-import type { ImageCategory } from '../../domain/entities/image-category';
-import { Page } from 'src/modules/shared/domain/entities/page';
-import { ErrorDto } from 'src/modules/shared/interfaces/http/dto/error-dto';
-import { PagedQueryDto } from 'src/modules/shared/interfaces/http/dto/paged-rsql-query';
-import { ImageDto, ImagePageDto } from './dtos/image.dto';
-import {
-  ImageImportTaskDto,
-  ImportImagesFromS3FolderDto,
-  ImportImagesResultDto as ImportImagesResultDto,
-} from './dtos/import-images-folder.dto';
-import { UpdateImageDto } from './dtos/update-image.dto';
-import type { UploadedImageFile } from './dtos/uploaded-image-file';
-import { UploadImageDto } from './dtos/upload-image.dto';
-import { ImportImagesCommand } from '../../application/cqrs/commands/import-images-from-s3-folder.command';
-import { ImportImagesResult } from '../../application/cqrs/handlers/import-images.handler';
-import { GetImageImportTaskQuery } from '../../application/cqrs/queries/get-image-import-task.query';
-import { ImageImportTask } from '../../domain/aggregates/image-import-task';
+import { JwtAuthGuard } from '../../../shared/infrastructure/security/jwt-auth.guard.js';
+import { ApiErrors } from '../../../shared/interfaces/http/api-errors.decorator.js';
+import type { AuthenticatedUser } from '../../../shared/interfaces/http/authenticated-request.js';
+import { CurrentUser } from '../../../shared/interfaces/http/current-user.decorator.js';
+import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command.js';
+import { DeleteImagesByScopeCommand } from '../../application/cqrs/commands/delete-images-by-scope.command.js';
+import type { DeleteImagesByScopeResult } from '../../application/cqrs/handlers/delete-images-by-scope.handler.js';
+import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command.js';
+import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command.js';
+import { GetImageQuery } from '../../application/cqrs/queries/get-image.query.js';
+import { ListImagesQuery } from '../../application/cqrs/queries/list-images.query.js';
+import type { ImageView } from '../../application/image-view.js';
+import { Image } from '../../domain/aggregates/image.js';
+import { Page } from '../../../shared/application/pagination/page.js';
+import { PagedQueryDto } from '../../../shared/interfaces/http/dto/paged-rsql-query.js';
+import { DeletedImagesDto } from './dto/deleted-images.dto.js';
+import { ImageDto, ImagePageDto } from './dto/image.dto.js';
+import { UpdateImageDto } from './dto/update-image.dto.js';
+import type { UploadedImageFile } from './dto/uploaded-image-file.js';
+import { UploadImageDto } from './dto/upload-image.dto.js';
 
 @UseGuards(JwtAuthGuard)
 @Controller('v1/images')
@@ -63,15 +56,22 @@ export class ImageController {
   ) {}
 
   @Get('')
-  @ApiOperation({ operationId: 'findImagesByCategory', summary: 'Find images by category' })
+  @ApiOperation({
+    operationId: 'findImagesByCategory',
+    summary: 'Find images',
+    description:
+      'Base images (rmu-mfe-assets) and user images in one listing: the base images first, sorted by path, then the user ' +
+      'images sorted by id; a page may span both and totalElements counts both. RSQL search over the fields of ImageDto, ' +
+      'for example `q=category==avatars` or `q=source==user;category==avatars`.',
+  })
   @ApiOkResponse({ type: ImagePageDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  async findByCategory(@Param('category') category: ImageCategory, @Query() dto: PagedQueryDto, @Request() req) {
-    const userId = req.user!.id as string;
-    const roles = req.user!.roles as string[];
+  @ApiErrors({ 400: 'Bad request, invalid search or page' })
+  async find(@Query() dto: PagedQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    const userId = user.id;
+    const roles = user.roles;
     const query = new ListImagesQuery(dto.q || '', dto.page, dto.size, userId, roles);
-    const page = await this.queryBus.execute<ListImagesQuery, Page<Image>>(query);
-    const mapped = page.content.map(image => ImageDto.fromEntity(image));
+    const page = await this.queryBus.execute<ListImagesQuery, Page<ImageView>>(query);
+    const mapped = page.content.map(image => ImageDto.fromView(image));
     return new Page<ImageDto>(mapped, page.pagination.page, page.pagination.size, page.pagination.totalElements);
   }
 
@@ -80,41 +80,30 @@ export class ImageController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: UploadImageDto })
   @ApiOperation({ operationId: 'uploadImage', summary: 'Upload a new image' })
-  @ApiOkResponse({ type: ImageDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
-  async upload(@Body() dto: UploadImageDto, @UploadedFile() file: UploadedImageFile, @Request() req) {
+  @ApiCreatedResponse({ type: ImageDto, description: 'Image uploaded' })
+  @ApiErrors({
+    400: 'Bad request, invalid data or a file that is not a PNG, JPEG or WebP image',
+    403: 'The user cannot upload images (rmu-user or rmu-admin)',
+    413: 'The file is larger than RMU_MEDIA_UPLOAD_MAX_BYTES',
+  })
+  async upload(@Body() dto: UploadImageDto, @UploadedFile() file: UploadedImageFile, @CurrentUser() user: AuthenticatedUser) {
     this.assertImageFile(file, true);
-    const user = req.user!;
-    const command = UploadImageDto.toCommand(dto, file, user.id as string, user.roles as string[]);
+    const command = UploadImageDto.toCommand(dto, file, user.id, user.roles);
     const image = await this.commandBus.execute<UploadImageCommand, Image>(command);
     return ImageDto.fromEntity(image);
   }
 
-  @Post('import')
-  @ApiBody({ type: ImportImagesFromS3FolderDto })
-  @ApiOperation({ operationId: 'importImages', summary: 'Import images' })
-  @ApiAcceptedResponse({ type: ImportImagesResultDto, description: 'Import task accepted' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
-  @HttpCode(202)
-  async importFromS3Folder(@Body() dto: ImportImagesFromS3FolderDto, @Request() req) {
-    const user = req.user!;
-    const command = ImportImagesFromS3FolderDto.toCommand(dto, user.id as string, user.roles as string[]);
-    const result = await this.commandBus.execute<ImportImagesCommand, ImportImagesResult>(command);
-    return ImportImagesResultDto.fromResult(result);
-  }
-
-  @Get('import/:taskId')
-  @ApiOperation({ operationId: 'getImageImportTask', summary: 'Get image import task result' })
-  @ApiOkResponse({ type: ImageImportTaskDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiNotFoundResponse({ description: 'Image import task not found', type: ErrorDto })
-  async getImportTask(@Param('taskId') taskId: string, @Request() req) {
-    const user = req.user!;
-    const query = new GetImageImportTaskQuery(taskId, user.id as string, user.roles as string[]);
-    const task = await this.queryBus.execute<GetImageImportTaskQuery, ImageImportTask>(query);
-    return ImageImportTaskDto.fromEntity(task);
+  @Get(':id')
+  @ApiOperation({
+    operationId: 'getImage',
+    summary: 'Get an image by id',
+    description: 'A user image id or a base image id, `base:<path>`, URL-encoded: `/v1/images/base%3Aimages%2Fraces%2Fx.png`',
+  })
+  @ApiOkResponse({ type: ImageDto, description: 'Success' })
+  @ApiErrors({ 404: 'Image not found' })
+  async findById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const image = await this.queryBus.execute<GetImageQuery, ImageView>(new GetImageQuery(id, user.id, user.roles));
+    return ImageDto.fromView(image);
   }
 
   @Patch(':id')
@@ -123,25 +112,58 @@ export class ImageController {
   @ApiBody({ type: UpdateImageDto })
   @ApiOperation({ operationId: 'updateImage', summary: 'Update image metadata or content' })
   @ApiOkResponse({ type: ImageDto, description: 'Success' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiNotFoundResponse({ description: 'Image not found', type: ErrorDto })
-  @ApiResponse({ status: 400, description: 'Bad request, invalid data', type: ErrorDto })
-  async update(@Param('id') id: string, @Body() dto: UpdateImageDto, @UploadedFile() file: UploadedImageFile | undefined, @Request() req) {
+  @ApiErrors({
+    404: 'Image not found',
+    400: 'Bad request, invalid data',
+    403: 'Only the owner or an administrator; a base image is read-only (`base-image-read-only`)',
+    409: 'Stale version',
+    413: 'The file is larger than RMU_MEDIA_UPLOAD_MAX_BYTES',
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateImageDto,
+    @UploadedFile() file: UploadedImageFile | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     this.assertImageFile(file, false);
-    const user = req.user!;
-    const command = UpdateImageDto.toCommand(id, dto, file, user.id as string, user.roles as string[]);
+    const command = UpdateImageDto.toCommand(id, dto, file, user.id, user.roles);
     const image = await this.commandBus.execute<UpdateImageCommand, Image>(command);
     return ImageDto.fromEntity(image);
+  }
+
+  // `DELETE /v1/images` and `DELETE /v1/images/:id` are different paths: the id route never takes this one.
+  @Delete('')
+  @ApiOperation({
+    operationId: 'deleteImagesByScope',
+    summary: 'Delete every user image of a scope',
+    description:
+      'Deletes the documents and the stored objects of the user images whose scope is the one given, for example when ' +
+      'strategic deletes a campaign (`scope=strategic-game:<id>`, spec 102). Only rmu-admin: the service account of the APIs.',
+  })
+  @ApiQuery({
+    name: 'scope',
+    required: true,
+    description: '`strategic-game:<uuid>`',
+    example: 'strategic-game:0b7c1f9e-0000-4000-8000-000000000000',
+  })
+  @ApiOkResponse({ type: DeletedImagesDto, description: 'How many images were deleted (0 when the scope has none)' })
+  @ApiErrors({
+    400: 'The scope is missing or invalid (`invalid-image-scope`)',
+    403: 'Only an administrator (`forbidden`)',
+  })
+  async deleteByScope(@Query('scope') scope: string | undefined, @CurrentUser() user: AuthenticatedUser): Promise<DeletedImagesDto> {
+    const command = new DeleteImagesByScopeCommand(typeof scope === 'string' ? scope : undefined, user.id, user.roles);
+    const result = await this.commandBus.execute<DeleteImagesByScopeCommand, DeleteImagesByScopeResult>(command);
+    return DeletedImagesDto.of(result.deleted);
   }
 
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ operationId: 'deleteImage', summary: 'Delete image by id' })
-  @ApiUnauthorizedResponse({ description: 'Invalid or missing authentication token', type: ErrorDto })
-  @ApiNotFoundResponse({ description: 'Image not found', type: ErrorDto })
-  async delete(@Param('id') id: string, @Request() req) {
-    const user = req.user!;
-    const command = new DeleteImageCommand(id, user.id as string, user.roles as string[]);
+  @ApiNoContentResponse({ description: 'Image deleted' })
+  @ApiErrors({ 404: 'Image not found', 403: 'Only the owner or an administrator; a base image is read-only (`base-image-read-only`)' })
+  async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const command = new DeleteImageCommand(id, user.id, user.roles);
     await this.commandBus.execute(command);
   }
 

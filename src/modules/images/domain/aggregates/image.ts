@@ -1,8 +1,10 @@
 import { randomUUID } from 'crypto';
-import { BaseAggregateRoot } from 'src/modules/shared/domain/aggregates/base-aggregate';
-import type { ImageProps } from './image-props';
+import { BaseAggregateRoot } from '../../../shared/domain/aggregates/base-aggregate.js';
+import type { ImageProps } from './image-props.js';
 
+/** An image uploaded by a user, stored in S3 under the uploads prefix and in Mongo. */
 export class Image extends BaseAggregateRoot<ImageProps> {
+  public readonly source = 'user' as const;
   public category: ImageProps['category'];
   public storageKey: string;
   public url: string;
@@ -14,6 +16,8 @@ export class Image extends BaseAggregateRoot<ImageProps> {
   public altText: string | undefined;
   public metadata: Record<string, string> | undefined;
   public verified: boolean;
+  public visibility: ImageProps['visibility'];
+  public readonly scope: string | undefined;
   public owner: string;
   public createdAt: Date;
   public updatedAt: Date | undefined;
@@ -31,6 +35,8 @@ export class Image extends BaseAggregateRoot<ImageProps> {
     this.altText = props.altText;
     this.metadata = props.metadata;
     this.verified = props.verified;
+    this.visibility = props.visibility;
+    this.scope = props.scope;
     this.owner = props.owner;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -64,15 +70,18 @@ export class Image extends BaseAggregateRoot<ImageProps> {
       metadata: this.metadata,
       owner: this.owner,
       verified: this.verified,
+      visibility: this.visibility,
+      scope: this.scope,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
   }
 
-  updateMetadata(props: Pick<Partial<ImageProps>, 'category' | 'altText' | 'metadata'>) {
+  updateMetadata(props: Pick<Partial<ImageProps>, 'category' | 'altText' | 'metadata' | 'visibility'>) {
     if (props.category !== undefined) this.category = props.category;
     if (props.altText !== undefined) this.altText = props.altText;
     if (props.metadata !== undefined) this.metadata = props.metadata;
+    if (props.visibility !== undefined) this.visibility = props.visibility;
     this.updatedAt = new Date();
   }
 

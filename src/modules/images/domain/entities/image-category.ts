@@ -1,7 +1,10 @@
 export const IMAGE_CATEGORIES = [
   'actions',
+  'armor',
   'avatars',
   'backgrounds',
+  'chronicle',
+  'cultures',
   'doc',
   'generic',
   'icons',
@@ -10,6 +13,8 @@ export const IMAGE_CATEGORIES = [
   'photos',
   'professions',
   'races',
+  'spells',
+  'weapons',
   'user-data',
 ] as const;
 

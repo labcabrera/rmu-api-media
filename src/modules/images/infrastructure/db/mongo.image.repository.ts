@@ -1,42 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
+import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ImageRepository } from 'src/modules/images/application/ports/image-repository';
-import { Image } from 'src/modules/images/domain/aggregates/image';
-import type { ImageCategory } from 'src/modules/images/domain/entities/image-category';
-import { Page } from 'src/modules/shared/domain/entities/page';
-import { MongoBaseRepository } from 'src/modules/shared/infrastructure/db/mongo.base.repository';
-import { RsqlParser } from 'src/modules/shared/infrastructure/persistence/repositories/rsql-parser';
-import { ImageDocument, ImageModel } from '../persistence/models/image-model';
+import type { ImageRepository, ImageSlice } from '../../application/ports/image-repository.port.js';
+import { Image } from '../../domain/aggregates/image.js';
+import { DEFAULT_IMAGE_VISIBILITY } from '../../domain/entities/image-visibility.js';
+import { MongoBaseRepository } from '../../../shared/infrastructure/db/mongo.base.repository.js';
+import { bindSelectors } from '../../../shared/infrastructure/db/rsql-matcher.js';
+import { RsqlParser } from '../../../shared/infrastructure/db/rsql-parser.js';
+import { type ImageDocument, ImageModel } from '../persistence/models/image.model.js';
 
 @Injectable()
-export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocument> implements ImageRepository {
-  constructor(@InjectModel(ImageModel.name) imageModel: Model<ImageDocument>, rsqlParser: RsqlParser) {
+export class MongoImageRepository extends MongoBaseRepository<Image, ImageModel> implements ImageRepository {
+  constructor(@InjectModel(ImageModel.name) imageModel: Model<ImageModel>, rsqlParser: RsqlParser) {
     super(imageModel, rsqlParser);
   }
 
-  async findByCategory(category: ImageCategory, page: number, size: number): Promise<Page<Image>> {
-    const skip = page * size;
+  async findSlice(rsql: string | undefined, skip: number, limit: number): Promise<ImageSlice> {
+    const node = this.rsqlParser.parseExpression(rsql);
+    // Every stored image is a user image: `source` is decided here and never reaches Mongo.
+    const bound = node ? bindSelectors(node, { source: 'user' }) : true;
+    if (bound === false) return { content: [], totalElements: 0 };
+    const filter = bound === true ? {} : this.rsqlParser.toMongo(bound);
     const [docs, totalElements] = await Promise.all([
-      this.model.find({ category }).skip(skip).limit(size).sort({ createdAt: -1 }),
-      this.model.countDocuments({ category }),
+      limit > 0 ? this.model.find(filter).sort({ _id: 1 }).skip(skip).limit(limit) : Promise.resolve([]),
+      this.model.countDocuments(filter),
     ]);
-    return new Page<Image>(
-      docs.map(doc => this.mapToEntity(doc)),
-      page,
-      size,
-      totalElements,
-    );
+    return { content: docs.map(doc => this.toEntity(doc)), totalElements };
   }
 
-  async findByStorageKey(storageKey: string): Promise<Image | null> {
-    const doc = await this.model.findOne({ storageKey });
-    return doc ? this.mapToEntity(doc) : null;
+  async findAllByScope(scope: string): Promise<Image[]> {
+    const docs = await this.model.find({ scope }).sort({ _id: 1 });
+    return docs.map(doc => this.toEntity(doc));
+  }
+
+  async deleteByIds(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const result = await this.model.deleteMany({ _id: { $in: ids } });
+    return result.deletedCount;
   }
 
   protected mapToEntity(doc: ImageDocument): Image {
     return Image.fromProps({
-      id: doc.id as string,
+      id: doc.id,
       category: doc.category,
       storageKey: doc.storageKey,
       url: doc.url,
@@ -48,6 +53,8 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageDocume
       altText: doc.altText,
       metadata: doc.metadata,
       verified: doc.verified ?? false,
+      visibility: doc.visibility ?? DEFAULT_IMAGE_VISIBILITY,
+      scope: doc.scope ?? undefined,
       owner: doc.owner,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
