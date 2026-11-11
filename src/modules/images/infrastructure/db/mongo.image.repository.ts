@@ -28,6 +28,17 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageModel>
     return { content: docs.map(doc => this.toEntity(doc)), totalElements };
   }
 
+  async findAllByScope(scope: string): Promise<Image[]> {
+    const docs = await this.model.find({ scope }).sort({ _id: 1 });
+    return docs.map(doc => this.toEntity(doc));
+  }
+
+  async deleteByIds(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const result = await this.model.deleteMany({ _id: { $in: ids } });
+    return result.deletedCount;
+  }
+
   protected mapToEntity(doc: ImageDocument): Image {
     return Image.fromProps({
       id: doc.id,
@@ -43,6 +54,7 @@ export class MongoImageRepository extends MongoBaseRepository<Image, ImageModel>
       metadata: doc.metadata,
       verified: doc.verified ?? false,
       visibility: doc.visibility ?? DEFAULT_IMAGE_VISIBILITY,
+      scope: doc.scope ?? undefined,
       owner: doc.owner,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,

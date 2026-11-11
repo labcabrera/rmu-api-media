@@ -13,6 +13,10 @@ export interface ImageRepository extends BaseRepository<Image> {
    * counts). The expression may filter on `source` (always `user` here) like any field of ImageDto.
    */
   findSlice(rsql: string | undefined, skip: number, limit: number): Promise<ImageSlice>;
+  /** Every user image of a scope (`strategic-game:<id>`). */
+  findAllByScope(scope: string): Promise<Image[]>;
+  /** Deletes the images of these ids and answers how many were deleted. */
+  deleteByIds(ids: string[]): Promise<number>;
 }
 
 export const IMAGE_REPOSITORY = Symbol('ImageRepository');

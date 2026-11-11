@@ -62,7 +62,14 @@ Images (spec 057) come from two sources, both in `GET /v1/images` with `source: 
 * *user images*: uploads (PNG, JPEG or WebP, at most `RMU_MEDIA_UPLOAD_MAX_BYTES`, `10485760`: a larger one is a 413
   `payload-too-large`), stored in S3 (`RMU_MEDIA_S3_BUCKET`, `RMU_MEDIA_S3_REGION`, optional `RMU_MEDIA_S3_ENDPOINT`,
   `RMU_MEDIA_S3_FORCE_PATH_STYLE` and credentials) at `<RMU_MEDIA_S3_UPLOADS_PREFIX>/<category>/<id>.<png|jpg>`
-  (prefix `uploads`), which is also their `url`.
+  (prefix `uploads`), which is also their `url`. They are scaled down to `RMU_MEDIA_IMAGE_MAX_WIDTH` (`2048`), or to
+  `RMU_MEDIA_CHRONICLE_MAX_WIDTH` (`4096`) for category `chronicle`.
+
+User images may carry a `scope` (spec 102), `strategic-game:<uuid>` for now, sent as the multipart field `scope` of the
+upload next to `category` (another value is a 400 `invalid-image-scope`). The listing filters on it
+(`q=scope==strategic-game:<id>`; base images have none), and `DELETE /v1/images?scope=<scope>`, only for `rmu-admin`,
+deletes every user image of the scope, document and object, answering `{ "deleted": n }`. Strategic calls it when a
+campaign is deleted.
 
 The listing gives the base images first, sorted by path, then the user images sorted by id; a page may span both and
 `totalElements` counts both. The RSQL `q` filters both, also on `source` (`q=source==user;category==avatars`).

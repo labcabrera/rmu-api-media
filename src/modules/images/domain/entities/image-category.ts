@@ -3,6 +3,7 @@ export const IMAGE_CATEGORIES = [
   'armor',
   'avatars',
   'backgrounds',
+  'chronicle',
   'cultures',
   'doc',
   'generic',

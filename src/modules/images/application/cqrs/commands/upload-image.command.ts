@@ -13,6 +13,8 @@ export class UploadImageCommand extends AuthenticatedCommand {
     userId: string,
     roles: string[],
     public readonly visibility: ImageVisibility = DEFAULT_IMAGE_VISIBILITY,
+    /** `strategic-game:<id>`, validated by the handler; undefined for an image of no scope. */
+    public readonly scope?: string,
   ) {
     super(userId, roles);
   }

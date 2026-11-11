@@ -6,6 +6,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { AuthModule } from '../shared/infrastructure/security/auth.module.js';
 import { SharedModule } from '../shared/shared.module.js';
 import { DeleteImageHandler } from './application/cqrs/handlers/delete-image.handler.js';
+import { DeleteImagesByScopeHandler } from './application/cqrs/handlers/delete-images-by-scope.handler.js';
 import { GetImageHandler } from './application/cqrs/handlers/get-image.handler.js';
 import { ListImagesHandler } from './application/cqrs/handlers/list-images.handler.js';
 import { UpdateImageHandler } from './application/cqrs/handlers/update-image.handler.js';
@@ -43,6 +44,7 @@ import { BASE_IMAGE_CATALOG } from './application/ports/base-image-catalog.port.
     UploadImageHandler,
     UpdateImageHandler,
     DeleteImageHandler,
+    DeleteImagesByScopeHandler,
     {
       provide: IMAGE_REPOSITORY,
       useClass: MongoImageRepository,

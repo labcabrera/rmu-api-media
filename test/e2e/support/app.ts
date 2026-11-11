@@ -84,6 +84,7 @@ export async function startApp(env: Record<string, string> = {}): Promise<E2eApp
     RMU_MEDIA_BASE_MANIFEST_URI: manifest.uri,
     RMU_MEDIA_BASE_MANIFEST_TTL_MS: '0',
     RMU_MEDIA_IMAGE_MAX_WIDTH: '64',
+    RMU_MEDIA_CHRONICLE_MAX_WIDTH: '128',
     RMU_THROTTLE_LIMIT: '0',
     RMU_CORS_ORIGINS: '',
     ...env,

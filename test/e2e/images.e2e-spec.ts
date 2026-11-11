@@ -18,6 +18,7 @@ type ImageBody = {
   owner: string | null;
   source: string;
   visibility: string;
+  scope?: string;
 };
 
 const picture = (format: 'png' | 'jpeg', width = 200, height = 100) =>
@@ -388,5 +389,109 @@ describe('permissions [F-media-06]', () => {
         .set('Authorization', e2e.auth('admin'));
       expect(ids(still.body)).toEqual([id]);
     }
+  });
+});
+
+describe('chronicle images and scope (spec 102)', () => {
+  const GAME = '0b7c1f9e-1234-4abc-8def-0000000000a1';
+  const OTHER_GAME = '0b7c1f9e-1234-4abc-8def-0000000000b2';
+  const scopeOf = (game: string) => `strategic-game:${game}`;
+  const uploadScoped = async (scope: string | undefined, user: 'owner' | 'other' = 'owner') => {
+    const test = request(e2e.server).post('/v1/images').set('Authorization', e2e.auth(user)).field('category', 'chronicle');
+    if (scope !== undefined) test.field('scope', scope);
+    return test.attach('file', await picture('png', 400, 200), { filename: 'map.png', contentType: 'image/png' });
+  };
+  const listByScope = (scope: string) =>
+    request(e2e.server)
+      .get('/v1/images')
+      .query({ q: `scope==${scope}`, size: 100 })
+      .set('Authorization', e2e.auth('owner'));
+
+  it('uploads a chronicle image with its scope, scaled to RMU_MEDIA_CHRONICLE_MAX_WIDTH', async () => {
+    const response = await uploadScoped(scopeOf(GAME));
+    expect(response.status).toBe(201);
+    const image = response.body as ImageBody;
+    expect(image).toMatchObject({ category: 'chronicle', scope: scopeOf(GAME), width: 128, height: 64 });
+    expect(image.storageKey).toBe(`uploads/chronicle/${image.id}.png`);
+  });
+
+  it('leaves the scope out when none is sent, or an empty one', async () => {
+    expect((await uploadScoped(undefined)).body as ImageBody).not.toHaveProperty('scope');
+    const empty = await uploadScoped('');
+    expect(empty.status).toBe(201);
+    expect(empty.body as ImageBody).not.toHaveProperty('scope');
+  });
+
+  it.each(['campaign:1', `tactical-game:${GAME}`, 'strategic-game:not-a-uuid', GAME])('rejects the scope %s', async scope => {
+    const response = await uploadScoped(scope);
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ code: 'invalid-image-scope' });
+  });
+
+  it('filters the listing by scope, which no base image has', async () => {
+    const mine = ((await uploadScoped(scopeOf(OTHER_GAME))).body as ImageBody).id;
+    const theirs = ((await uploadScoped(scopeOf(OTHER_GAME), 'other')).body as ImageBody).id;
+    await uploadScoped(scopeOf(GAME));
+    const response = await listByScope(scopeOf(OTHER_GAME));
+    expect(response.status).toBe(200);
+    expect(ids(response.body).sort()).toEqual([mine, theirs].sort());
+    expect((response.body as { content: ImageBody[] }).content.every(image => image.source === 'user')).toBe(true);
+  });
+
+  describe('DELETE /v1/images?scope=', () => {
+    const GONE = '0b7c1f9e-1234-4abc-8def-0000000000c3';
+
+    it('lets an admin delete every image of the scope, documents and objects', async () => {
+      const scoped = [(await uploadScoped(scopeOf(GONE))).body, (await uploadScoped(scopeOf(GONE), 'other')).body] as ImageBody[];
+      const kept = (await uploadScoped(scopeOf(GAME))).body as ImageBody;
+      const response = await request(e2e.server)
+        .delete('/v1/images')
+        .query({ scope: scopeOf(GONE) })
+        .set('Authorization', e2e.auth('admin'));
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ deleted: 2 });
+      expect(ids((await listByScope(scopeOf(GONE))).body)).toEqual([]);
+      for (const image of scoped) expect(e2e.bucket.has(image.storageKey)).toBe(false);
+      expect(e2e.bucket.has(kept.storageKey)).toBe(true);
+      const again = await request(e2e.server)
+        .delete('/v1/images')
+        .query({ scope: scopeOf(GONE) })
+        .set('Authorization', e2e.auth('admin'));
+      expect(again.body).toEqual({ deleted: 0 });
+    });
+
+    it.each<['owner' | 'noRole']>([['owner'], ['noRole']])('answers 403 to %s and deletes nothing', async user => {
+      await uploadScoped(scopeOf(GAME));
+      const response = await request(e2e.server)
+        .delete('/v1/images')
+        .query({ scope: scopeOf(GAME) })
+        .set('Authorization', e2e.auth(user));
+      expect(response.status).toBe(403);
+      expect(response.body).toMatchObject({ code: 'forbidden' });
+      expect(ids((await listByScope(scopeOf(GAME))).body).length).toBeGreaterThan(0);
+    });
+
+    it('answers 401 without a token', async () => {
+      const response = await request(e2e.server)
+        .delete('/v1/images')
+        .query({ scope: scopeOf(GAME) });
+      expect(response.status).toBe(401);
+    });
+
+    it.each<[string, Record<string, string>]>([
+      ['no scope', {}],
+      ['an empty scope', { scope: '' }],
+      ['an invalid scope', { scope: 'strategic-game:1' }],
+    ])('answers 400 invalid-image-scope to %s', async (_name, query) => {
+      const response = await request(e2e.server).delete('/v1/images').query(query).set('Authorization', e2e.auth('admin'));
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ code: 'invalid-image-scope', path: '/v1/images' });
+    });
+
+    it('keeps DELETE /v1/images/:id working', async () => {
+      const created = (await uploadScoped(scopeOf(GAME))).body as ImageBody;
+      const response = await request(e2e.server).delete(`/v1/images/${created.id}`).set('Authorization', e2e.auth('owner'));
+      expect(response.status).toBe(204);
+    });
   });
 });

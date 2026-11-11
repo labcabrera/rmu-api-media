@@ -15,12 +15,23 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../shared/infrastructure/security/jwt-auth.guard.js';
 import { ApiErrors } from '../../../shared/interfaces/http/api-errors.decorator.js';
 import type { AuthenticatedUser } from '../../../shared/interfaces/http/authenticated-request.js';
 import { CurrentUser } from '../../../shared/interfaces/http/current-user.decorator.js';
 import { DeleteImageCommand } from '../../application/cqrs/commands/delete-image.command.js';
+import { DeleteImagesByScopeCommand } from '../../application/cqrs/commands/delete-images-by-scope.command.js';
+import type { DeleteImagesByScopeResult } from '../../application/cqrs/handlers/delete-images-by-scope.handler.js';
 import { UpdateImageCommand } from '../../application/cqrs/commands/update-image.command.js';
 import { UploadImageCommand } from '../../application/cqrs/commands/upload-image.command.js';
 import { GetImageQuery } from '../../application/cqrs/queries/get-image.query.js';
@@ -29,6 +40,7 @@ import type { ImageView } from '../../application/image-view.js';
 import { Image } from '../../domain/aggregates/image.js';
 import { Page } from '../../../shared/application/pagination/page.js';
 import { PagedQueryDto } from '../../../shared/interfaces/http/dto/paged-rsql-query.js';
+import { DeletedImagesDto } from './dto/deleted-images.dto.js';
 import { ImageDto, ImagePageDto } from './dto/image.dto.js';
 import { UpdateImageDto } from './dto/update-image.dto.js';
 import type { UploadedImageFile } from './dto/uploaded-image-file.js';
@@ -117,6 +129,32 @@ export class ImageController {
     const command = UpdateImageDto.toCommand(id, dto, file, user.id, user.roles);
     const image = await this.commandBus.execute<UpdateImageCommand, Image>(command);
     return ImageDto.fromEntity(image);
+  }
+
+  // `DELETE /v1/images` and `DELETE /v1/images/:id` are different paths: the id route never takes this one.
+  @Delete('')
+  @ApiOperation({
+    operationId: 'deleteImagesByScope',
+    summary: 'Delete every user image of a scope',
+    description:
+      'Deletes the documents and the stored objects of the user images whose scope is the one given, for example when ' +
+      'strategic deletes a campaign (`scope=strategic-game:<id>`, spec 102). Only rmu-admin: the service account of the APIs.',
+  })
+  @ApiQuery({
+    name: 'scope',
+    required: true,
+    description: '`strategic-game:<uuid>`',
+    example: 'strategic-game:0b7c1f9e-0000-4000-8000-000000000000',
+  })
+  @ApiOkResponse({ type: DeletedImagesDto, description: 'How many images were deleted (0 when the scope has none)' })
+  @ApiErrors({
+    400: 'The scope is missing or invalid (`invalid-image-scope`)',
+    403: 'Only an administrator (`forbidden`)',
+  })
+  async deleteByScope(@Query('scope') scope: string | undefined, @CurrentUser() user: AuthenticatedUser): Promise<DeletedImagesDto> {
+    const command = new DeleteImagesByScopeCommand(typeof scope === 'string' ? scope : undefined, user.id, user.roles);
+    const result = await this.commandBus.execute<DeleteImagesByScopeCommand, DeleteImagesByScopeResult>(command);
+    return DeletedImagesDto.of(result.deleted);
   }
 
   @Delete(':id')

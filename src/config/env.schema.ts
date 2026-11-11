@@ -25,6 +25,8 @@ export const envSchema = Joi.object({
   RMU_MEDIA_S3_SECRET_ACCESS_KEY: Joi.string().optional(),
   RMU_MEDIA_S3_FORCE_PATH_STYLE: Joi.boolean().default(false),
   RMU_MEDIA_IMAGE_MAX_WIDTH: Joi.number().integer().min(1).default(2048),
+  // Width of the images of category chronicle, usually maps (spec 102, decision 4).
+  RMU_MEDIA_CHRONICLE_MAX_WIDTH: Joi.number().integer().min(1).default(4096),
   // Largest upload; a larger file is a 413 (spec 057, decision 9).
   RMU_MEDIA_UPLOAD_MAX_BYTES: Joi.number().integer().min(1).default(10_485_760),
   // Manifest of the base images of rmu-mfe-assets (spec 057, decision 2), read again at most once per TTL.

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import type { ImageStoragePort, StoreImageInput, StoredImage } from '../../application/ports/image-storage.port.js';
 import { ValidationError } from '../../../shared/domain/errors/errors.js';
+import type { ImageCategory } from '../../domain/entities/image-category.js';
 
 /** The formats sharp must detect in an upload. */
 const ACCEPTED_FORMATS = new Set(['png', 'jpeg', 'webp']);
@@ -15,6 +16,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   private readonly bucket: string;
   private readonly uploadsPrefix: string;
   private readonly maxWidth: number;
+  private readonly chronicleMaxWidth: number;
 
   constructor(configService: ConfigService) {
     const endpoint = configService.get<string>('RMU_MEDIA_S3_ENDPOINT');
@@ -26,7 +28,8 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
 
     this.bucket = configService.getOrThrow<string>('RMU_MEDIA_S3_BUCKET');
     this.uploadsPrefix = this.normalizePrefix(configService.get<string>('RMU_MEDIA_S3_UPLOADS_PREFIX') ?? 'uploads');
-    this.maxWidth = configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048;
+    this.maxWidth = Number(configService.get<number>('RMU_MEDIA_IMAGE_MAX_WIDTH') ?? 2048);
+    this.chronicleMaxWidth = Number(configService.get<number>('RMU_MEDIA_CHRONICLE_MAX_WIDTH') ?? 4096);
 
     this.client = new S3Client({
       region: configService.getOrThrow<string>('RMU_MEDIA_S3_REGION'),
@@ -43,7 +46,7 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
   }
 
   async store(input: StoreImageInput): Promise<StoredImage> {
-    const processed = await this.scale(input.content, input.contentType);
+    const processed = await this.scale(input.content, input.contentType, this.maxWidthFor(input.category));
     const storageKey = this.buildStorageKey(input, processed.contentType);
 
     await this.client.send(
@@ -81,9 +84,14 @@ export class S3ImageStorageAdapter implements ImageStoragePort {
     }
   }
 
-  private async scale(content: Buffer, contentType: string) {
+  /** The width an upload of a category is scaled down to: maps of the chronicle keep more detail (spec 102, decision 4). */
+  maxWidthFor(category: ImageCategory): number {
+    return category === 'chronicle' ? this.chronicleMaxWidth : this.maxWidth;
+  }
+
+  private async scale(content: Buffer, contentType: string, maxWidth: number) {
     await this.checkImage(content);
-    const pipeline = sharp(content).rotate().resize({ width: this.maxWidth, withoutEnlargement: true });
+    const pipeline = sharp(content).rotate().resize({ width: maxWidth, withoutEnlargement: true });
     const outputType = this.normalizeOutputType(contentType);
     const output =
       outputType === 'image/png'
