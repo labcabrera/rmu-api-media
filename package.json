@@ -1,6 +1,6 @@
 {
   "name": "rmu-api-media",
-  "version": "0.2.0",
+  "version": "0.2.1-SNAPSHOT",
   "description": "Media API for RMU",
   "author": {
     "name": "Luis Cabrera",
